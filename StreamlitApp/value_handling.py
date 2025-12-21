@@ -11,7 +11,6 @@ def values_handling(df, type):
     else:
         df['Current Episode'] = df['Current Episode'].astype(str)
         df['Episode'] = df['Episode'].astype(str)
-        df['Rating'] = df['Rating'].astype(str)
     return df
 
 def initial_load(df, type):

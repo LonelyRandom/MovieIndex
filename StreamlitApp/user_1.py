@@ -399,7 +399,7 @@ def display_single_card(col, actress, card_id):
         
         st.markdown(card_html, unsafe_allow_html=True)
         
-        if st.button("View Details",key=f'view_film_{card_id}',use_container_width=True, type='primary'):
+        if st.button("View Details",key=f'view_film_{card_id}',width='stretch', type='primary'):
             st.session_state.viewing_film_index = card_id
             st.session_state.editing_film_index = None
             st.rerun()
@@ -425,15 +425,14 @@ def display_film_grid(df, cards_per_row=4):
             st.session_state.search_reset = False
             st.session_state.search_bar = ''
     with st.container(horizontal=True, vertical_alignment='bottom'):
-        search_name = st.text_input("🔍 Search (Actress Name / Code):", placeholder="Name or Code...", key='search_bar')
+        search_name = st.text_input("🔍 Search (Title):", placeholder="Enter Movie or Series...", key='search_bar')
         if st.button('Clear'):
             st.session_state.search_reset = True
             st.rerun()
     playlist_filter = st.selectbox("Playlist:", options=PLAYLIST_OPTS)
 
     if search_name:
-        mask = (filtered_df['Actress Name'].str.contains(search_name, case=False, na=False) | 
-                filtered_df['Code'].str.contains(search_name, case=False, na=False))
+        mask = filtered_df['Title'].str.contains(search_name, case=False, na=False)
         filtered_df = filtered_df[mask]
 
     if playlist_filter != 'All':
@@ -449,27 +448,59 @@ def display_film_grid(df, cards_per_row=4):
                 with cols[col_idx]:
                     st.image(
                         actress['Picture'],
-                        caption=actress['Code']
+                        caption=actress['Title'],
+                        width='stretch'
                     )
                 
                     with st.expander('📋 View Details', expanded=False):
-                        st.markdown(f"**🎬 {actress['Actress Name']}**")
-                        if actress['Release Date'] != '?':
-                            release_date = datetime.strptime(actress['Release Date'], '%d/%m/%Y').strftime('%b, %d %Y')
+                        st.markdown(f"**🎬 {actress['Type']}**")
+                        st.caption(f"🕑 {actress['Current Episode']}/{actress['Episode']}")
+                        st.caption(f"📁 {actress['Genre']}")
+                        if actress['Rating'] == '?':
+                            st.caption("🤩 -")
                         else:
-                            release_date = '?'
-                        st.caption(f"📅 {release_date}")
-                        st.caption(f"📁 {'-' if actress['Playlist'] == 'All' else actress['Playlist']}")
+                            st.caption(f"🤩 {'⭐' * actress['Rating']}")
                         
-                        Info_text = actress['Info']
-                        if Info_text == 'Watched':
-                            st.success(f"🟢 {Info_text}")
-                        elif Info_text == 'Not Watched':
-                            st.error(f"🔴 {Info_text}")
+                        info_text = actress['Info']
+                        status_text = actress['Status']
+
+                        if info_text == 'Complete':
+                            info_icon = '🔵'
+                            info_color = 'blue'
+                        elif info_text == 'Want to Watch':
+                            info_icon = '🟢'
+                            info_color = 'green'
+                        elif info_text == 'On Going':
+                            info_icon = '🟡'
+                            info_color = 'yellow'
+                        elif info_text == 'Drop':
+                            info_icon = '🔴'
+                            info_color = 'red'
+                        elif info_text == 'Dissapointing':
+                            info_icon = '🟣'
+                            info_color = 'violet'
                         else:
-                            st.warning(f"⚪ {Info_text}")
+                            info_icon = '⚪'
+                            info_color = 'grey'
+
+                        if status_text == 'Not Watched':
+                            status_icon = '🔴'
+                            status_color = 'red'
+                        elif status_text == 'Watched':
+                            status_icon = '🟢'
+                            status_color = 'green'
+                        elif status_text == 'Goat':
+                            status_icon = '🟣'
+                            status_color = 'violet'
+                        else:
+                            status_icon = '⚪'
+                            status_color = 'grey'
+
                         with st.container(horizontal=True):
-                            if st.button('✏️ Edit', key=f'film_edit_{idx}', use_container_width=True):
+                            st.badge(f"{status_text}",icon=status_icon, color=status_color)
+                            st.badge(f"{info_text}",icon=info_icon, color=info_color)
+                        with st.container(horizontal=True):
+                            if st.button('✏️ Edit', key=f'film_edit_{idx}', width='stretch'):
                                 st.session_state.viewing_film_index = idx
                                 st.session_state.editing_film_index = idx
                                 st.rerun()
@@ -507,7 +538,7 @@ def complex_home(conn):
             if st.button('Go To Film →'):
                 return 'film'
     
-    if st.button('🔐 Logout', use_container_width=True, type='primary'):
+    if st.button('🔐 Logout', width='stretch', type='primary'):
         st.session_state.clear()
         return 'login'
     
@@ -600,14 +631,14 @@ def complex_film(conn):
             st_star_rating(label='Rating', maxValue = 5, defaultValue = int(film['Rating']), key = "rating", read_only = True)
 
         with st.container(key='view_film_edit_container_button', horizontal=True):
-            if st.button('✏️ Edit', use_container_width=True):
+            if st.button('✏️ Edit', width='stretch'):
                 st.session_state.editing_film_index = index
                 st.rerun()
-            if st.button('❌ Close', use_container_width=True):
+            if st.button('❌ Close', width='stretch'):
                 st.session_state.viewing_film_index = None
                 st.session_state.editing_film_index = None
                 st.rerun()
-            if st.button("🗑️ Delete Actress", use_container_width=True, type="secondary", key=f"delete_{index}"):
+            if st.button("🗑️ Delete Actress", width='stretch', type="secondary", key=f"delete_{index}"):
                 delete_film(index)
 
     def show_edit_film(index):
@@ -652,6 +683,7 @@ def complex_film(conn):
             edited_eps = st.number_input('Episode',min_value=1, value=int(film['Episode']))
             edited_info = st.selectbox('Info', options=INFO_OPTS_S, index=info_s_index)
         else:
+            edited_eps = '?'
             edited_info = st.selectbox('Info', options=INFO_OPTS_M, index=info_m_index)
 
         if edited_info == 'On Going':
@@ -681,11 +713,11 @@ def complex_film(conn):
                 edited_playlist = new_playlist
         
         # Tombol aksi
-        if st.button("🗑️ Delete Actress", use_container_width=True, type="secondary", key=f"delete_{index}"):
+        if st.button("🗑️ Delete Actress", width='stretch', type="secondary", key=f"delete_{index}"):
             delete_film(index)
 
         with st.container(horizontal=True):
-            if st.button("💾 Save", use_container_width=True, type="primary", key=f"save_{index}"):
+            if st.button("💾 Save", width='stretch', type="primary", key=f"save_{index}"):
                 join_code = edited_title
                 clean_code = re.sub(r'[^\w]', '', join_code)
                 clean_code = "N" + clean_code
@@ -749,7 +781,7 @@ def complex_film(conn):
                 st.session_state.editing_film_index = None
                 st.rerun()
                 
-            if st.button('❌ Close', use_container_width=True):
+            if st.button('❌ Close', width='stretch'):
                 st.session_state.viewing_film_index = None
                 st.session_state.editing_film_index = None
                 st.rerun()
@@ -827,6 +859,7 @@ def complex_film(conn):
         elif new_info == 'Complete':
             new_current_eps = new_episode
             new_rating = st_star_rating('Rating', maxValue=5, defaultValue=3, key="new_rating")
+            new_rating = int(new_rating)
         else:
             new_current_eps = '?'
             new_rating = '?'
@@ -840,7 +873,7 @@ def complex_film(conn):
 
 
         with st.container(key='film_new_button', horizontal=True):
-            if st.button('💾 Add Film', use_container_width=True):
+            if st.button('💾 Add Film', width='stretch'):
                 if new_title and new_genre:
                     if new_picture:
                         join_name = new_title
@@ -857,7 +890,7 @@ def complex_film(conn):
                         'Title': new_title,
                         'Type': new_type,
                         'Current Episode': new_current_eps,
-                        'Episode': new_episode,
+                        'Episode': str(new_episode),
                         'Genre': new_genre,
                         'Rating': new_rating,
                         'Playlist': new_playlist
@@ -881,19 +914,19 @@ def complex_film(conn):
             
 
     with st.sidebar:
-        if st.button('⬅️ Back', use_container_width=True):
+        if st.button('⬅️ Back', width='stretch'):
             return 'home'
         st.markdown('---')
         st.header("⚙️ Display Settings")
         display_mode = st.radio(
             "View Mode",
-            ["Cards with HTML", "Simple Grid", "Table View"]
+            ["Cards with HTML", "Simple Grid"]
         )
         
         st.markdown('---')
-        if st.button('➕ Add New Film', use_container_width=True):
+        if st.button('➕ Add New Film', width='stretch'):
             add_new_film()
-        if st.button('🔐 Logout', use_container_width=True):
+        if st.button('🔐 Logout', width='stretch'):
             st.session_state.clear()
             return 'login'
     
@@ -907,24 +940,24 @@ def complex_film(conn):
         display_film_card(df)
     elif display_mode == "Simple Grid":
         display_film_grid(df, cards_per_row=4)
-    else:  # Table View
-        df = values_handling(df, 'film')
-        df = initial_load(df, 'film')
+    # else:  # Table View
+    #     df = values_handling(df, 'film')
+    #     df = initial_load(df, 'film')
 
-        st.dataframe(
-            df,
-            use_container_width=True,
-            column_config={
-                "Picture": st.column_config.ImageColumn("Photo", width="small"),
-                "Actress Name": st.column_config.TextColumn("Name", width="medium"),
-                "Code": st.column_config.TextColumn("Code", width="small"),
-                "Release Date": st.column_config.DateColumn("Release"),
-                "Info": st.column_config.SelectboxColumn(
-                    "Info",
-                    options=["Not Watched", "Watched", "Goat"]
-                )
-            }
-        )
+    #     st.dataframe(
+    #         df,
+    #         width='stretch'
+    #         # column_config={
+    #         #     "Picture": st.column_config.ImageColumn("Photo", width="small"),
+    #         #     "Actress Name": st.column_config.TextColumn("Name", width="medium"),
+    #         #     "Code": st.column_config.TextColumn("Code", width="small"),
+    #         #     "Release Date": st.column_config.DateColumn("Release"),
+    #         #     "Info": st.column_config.SelectboxColumn(
+    #         #         "Info",
+    #         #         options=["Not Watched", "Watched", "Goat"]
+    #         #     )
+    #         # }
+    #     )
 
     st.markdown("""
     <style>
@@ -1252,11 +1285,11 @@ def complex_actress(conn):
             # Tombol Edit dan Close
             button_container = st.container(key='view_edit_close', horizontal=True)
             with button_container:
-                if st.button("✏️ Edit", use_container_width=True, key=f"edit_btn_{index}"):
+                if st.button("✏️ Edit", width='stretch', key=f"edit_btn_{index}"):
                     st.session_state.editing_index = index
                     st.rerun()
 
-                if st.button("❌ Close", use_container_width=True, key=f"close_{index}"):
+                if st.button("❌ Close", width='stretch', key=f"close_{index}"):
                     st.session_state.viewing_index = None
                     st.session_state.editing_index = None
                     st.rerun()
@@ -1324,7 +1357,7 @@ def complex_actress(conn):
 
         st.markdown("---")
         
-        if st.button("Close", use_container_width=True, key=f'cancel_{index}', type='primary'):
+        if st.button("Close", width='stretch', key=f'cancel_{index}', type='primary'):
             st.session_state.viewing_index = None
             st.session_state.editing_index = None
             st.rerun()
@@ -1347,16 +1380,16 @@ def complex_actress(conn):
             
             
             # Tombol aksi
-            if st.button("← Back to View", use_container_width=True, key=f"back_{index}"):
+            if st.button("← Back to View", width='stretch', key=f"back_{index}"):
                 st.session_state.editing_index = None
                 st.rerun()
             
-            if st.button("Close", use_container_width=True, key=f"close_{index}"):
+            if st.button("Close", width='stretch', key=f"close_{index}"):
                 st.session_state.viewing_index = None
                 st.session_state.editing_index = None
                 st.rerun()
                 
-            if st.button("🗑️ Delete Actress", use_container_width=True, type="secondary", key=f"delete_{index}"):
+            if st.button("🗑️ Delete Actress", width='stretch', type="secondary", key=f"delete_{index}"):
                 delete_actress(index)
 
             # Image uploader
@@ -1496,7 +1529,7 @@ def complex_actress(conn):
 
 
         # Save changes
-        if st.button("💾 Save Changes", use_container_width=True, type="primary", key=f"save_{index}"):
+        if st.button("💾 Save Changes", width='stretch', type="primary", key=f"save_{index}"):
             # Generate clean name untuk public_id
             join_name = edited_name
             clean_name = re.sub(r'[^\w]', '', join_name)
@@ -1702,8 +1735,8 @@ def complex_actress(conn):
 
         # Tombol submit
         with st.container(horizontal=True):
-            submit_new = st.button("💾 Add Actress", use_container_width=True)
-            cancel_new = st.button("❌ Cancel", use_container_width=True)
+            submit_new = st.button("💾 Add Actress", width='stretch')
+            cancel_new = st.button("❌ Cancel", width='stretch')
         
         if submit_new:
             if new_name and new_native and not job_error:
@@ -1757,7 +1790,7 @@ def complex_actress(conn):
 
     # Sidebar
     with st.sidebar:
-        if st.button('⬅️ Back', use_container_width=True):
+        if st.button('⬅️ Back', width='stretch'):
             return 'home'
         st.header(f'Actress Listed : {len(st.session_state.actress_df)}')
         st.markdown("---")
@@ -1772,15 +1805,15 @@ def complex_actress(conn):
         
         st.markdown("---")
         st.subheader("Management")
-        if st.button("➕ Add New Actress", use_container_width=True):
+        if st.button("➕ Add New Actress", width='stretch'):
             st.session_state.adding_new = True
         
         # # Tombol refresh data
-        # if st.button("🔄 Refresh Data", use_container_width=True):
+        # if st.button("🔄 Refresh Data", width='stretch'):
         #     refresh_data()
         #     st.rerun()
         
-        if st.button('🔐 Logout', use_container_width=True):
+        if st.button('🔐 Logout', width='stretch'):
             st.session_state.clear()
             return 'login'
 
@@ -1894,7 +1927,7 @@ def complex_actress(conn):
                         st.markdown(card_html, unsafe_allow_html=True)
                         
                         # Button container untuk View Details
-                        if st.button("View Details", key=f"view_{idx}", use_container_width=True):
+                        if st.button("View Details", key=f"view_{idx}", width='stretch'):
                             st.session_state.viewing_index = idx
                             st.session_state.editing_index = None
                             show_actress_details()
@@ -1966,7 +1999,7 @@ def complex_actress(conn):
                         st.markdown(card_html, unsafe_allow_html=True)
                         
                         # Button container untuk View Details
-                        if st.button("View Details", key=f"view_{idx}", use_container_width=True, type='primary'):
+                        if st.button("View Details", key=f"view_{idx}", width='stretch', type='primary'):
                             st.session_state.viewing_index = idx
                             st.session_state.editing_index = None
                             st.rerun()
