@@ -12,9 +12,7 @@ from streamlit_star_rating import st_star_rating
 # ACTRESS OPTS
 REVIEW_OPTS = [
     'Not Watched',
-    'Watched',
-    'Goat',
-    'Drop'
+    'Watched'
 ]
 
 JOB_OPTS = [
@@ -27,7 +25,7 @@ JOB_OPTS = [
 
 COUNTRY_OPTS = [
     "Indonesia",
-    "Korea",
+    "South Korea",
     "Japan",
     "China",
     "Taiwan",
@@ -1541,7 +1539,7 @@ def complex_actress(conn):
 
             # kalau cuma ganti foto
             if new_pic and (edited_native == actress['Name (Native)']) and not job_error:
-                if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture'].iloc[0]).lower():
+                if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
                     try:
                         delete_cloudinary_image(old_public_id)
                     except Exception as e:
@@ -1555,7 +1553,7 @@ def complex_actress(conn):
                     return
             # kalau ganti foto dan code
             elif new_pic and (edited_native != actress['Name (Native)']) and not job_error:
-                if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture'].iloc[0]).lower():
+                if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
                     try:
                         delete_cloudinary_image(old_public_id)
                     except Exception as e:
