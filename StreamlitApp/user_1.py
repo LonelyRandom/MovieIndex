@@ -1474,7 +1474,7 @@ def complex_actress(conn):
         default_jobs, job_groups = parse_jobs_with_group(actress['Job'])
 
         st.subheader("Other Information")
-        if st.toggle('Favourite'):
+        if st.toggle('Favourite',value=(actress['Favourite'] == 1)):
             edited_favourite = 1
         else:
             edited_favourite = 0
@@ -1664,18 +1664,18 @@ def complex_actress(conn):
         new_nationality = st.selectbox("Country", options=COUNTRY_OPTS, key='new_nationality')
         new_birthdate = st.date_input("Birthdate", min_value=date(1980,1,1), key='new_birthdate')
 
-        if st.checkbox('No Info', key='New Birthdate', value=(new_birthdate == None)):
+        if st.checkbox('No Info', key='New Birthdate', value=(new_birthdate is None)):
             new_birthdate = '?'
             new_age = '?'
-        elif new_birthdate != None:
+        elif new_birthdate != '' and new_birthdate != None:
             new_age = relativedelta(date.today(), new_birthdate).years        
             new_birthdate = new_birthdate.strftime('%d/%m/%Y')
+            st.write('Birthdate : ', datetime.strptime(str(new_birthdate), '%d/%m/%Y').date().strftime("%b %d, %Y"))
         else:
             new_birthdate = '?'
             new_age = '?'
 
         st.write('Age : ', str(new_age))
-        st.write('Birthdate : ', datetime.strptime(str(new_birthdate), '%d/%m/%Y').date().strftime("%b, %d %Y"))
 
         new_height = st.number_input("Height (cm)", min_value=130, key='new_height')
         if st.checkbox('No Info', key='New Height'):
@@ -1927,7 +1927,7 @@ def complex_actress(conn):
                         st.markdown(card_html, unsafe_allow_html=True)
                         
                         # Button container untuk View Details
-                        if st.button("View Details", key=f"view_{idx}", width='stretch'):
+                        if st.button("View Details", key=f"view_{idx}", width='stretch', type='primary'):
                             st.session_state.viewing_index = idx
                             st.session_state.editing_index = None
                             show_actress_details()
