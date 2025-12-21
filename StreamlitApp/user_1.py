@@ -1183,8 +1183,8 @@ def complex_film(conn):
 def complex_actress(conn):
     st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Actress List</h1>", unsafe_allow_html=True)
 
-    if 'initial' not in st.session_state:
-        st.session_state.initial = False
+    if 'actress_initial' not in st.session_state:
+        st.session_state.actress_initial = False
 
     # Fungsi untuk refresh data dari Google Sheets
     def refresh_data(conn):
@@ -1217,7 +1217,7 @@ def complex_actress(conn):
             st.stop()
 
     # Inisialisasi DataFrame
-    if st.session_state.initial == False:
+    if st.session_state.actress_initial == False:
         df = init_dataframe_actress(conn)
 
     # Inisialisasi variabel kontrol
@@ -1814,7 +1814,8 @@ def complex_actress(conn):
         if st.button('🔐 Logout', width='stretch'):
             st.session_state.clear()
             return 'login'
-
+    st.write(df)
+    st.stop()
     # Tampilkan dialog add new jika needed
     if st.session_state.adding_new:
         add_new_actress()

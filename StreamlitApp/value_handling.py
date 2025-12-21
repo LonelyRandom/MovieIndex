@@ -6,7 +6,7 @@ import streamlit as st
 def values_handling(df, type):
     if type == 'actress':
         df['Height (cm)'] = df['Height (cm)'].astype(str)
-        df['Age'] = df['Age'].astype(str)
+        df['Age'] = df['Age'].astype(int)
         df['Birthdate'] = df['Birthdate'].astype(str)
     else:
         df['Current Episode'] = df['Current Episode'].astype(str)
