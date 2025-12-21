@@ -1814,8 +1814,7 @@ def complex_actress(conn):
         if st.button('🔐 Logout', width='stretch'):
             st.session_state.clear()
             return 'login'
-    st.write(df)
-    st.stop()
+
     # Tampilkan dialog add new jika needed
     if st.session_state.adding_new:
         add_new_actress()
@@ -1853,7 +1852,6 @@ def complex_actress(conn):
         if show_actress_not_watched:
             review_conditions.append(filtered_df['Review'].str.lower() == 'not watched')
         
-        
         favourite_conditions = []
         if show_favourite:
             favourite_conditions.append(filtered_df['Favourite'] == 1.0)
@@ -1861,9 +1859,6 @@ def complex_actress(conn):
             favourite_conditions.append(filtered_df['Favourite'] == 0.0)
             favourite_conditions.append(filtered_df['Favourite'] == 1.0)
 
-
-
-        
         if review_conditions:
             review_mask = review_conditions[0]
             for cond in review_conditions[1:]:
