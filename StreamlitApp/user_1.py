@@ -8,6 +8,8 @@ import pandas as pd
 from value_handling import values_handling, initial_load
 from dateutil.relativedelta import relativedelta
 from streamlit_star_rating import st_star_rating
+from st_clickable_images import clickable_images
+from streamlit_scroll_to_top import scroll_to_here
 
 # ACTRESS OPTS
 REVIEW_OPTS = [
@@ -232,12 +234,14 @@ def display_film_card(df):
     drop_count = len(filtered_df[filtered_df['Info'] == 'Drop']) if 'Info' in filtered_df.columns else 0
     complete_count = len(filtered_df[filtered_df['Info'] == 'Complete']) if 'Info' in filtered_df.columns else 0
     
+    st.write(f"Total Film : {len(filtered_df)}")
     with st.container(horizontal=True):
-        st.metric("Total Film", len(filtered_df))
-        st.metric("Want to Watch", want_to_watch_count)
-        st.metric("On Going", on_going_count)
-        st.metric("Drop", drop_count)
-        st.metric("Complete", complete_count)
+        with st.container():
+            st.metric("Want to Watch", want_to_watch_count)
+            st.metric("On Going", on_going_count)
+        with st.container():
+            st.metric("Drop", drop_count)
+            st.metric("Complete", complete_count)
 
     st.markdown("---")
     
@@ -1181,10 +1185,17 @@ def complex_film(conn):
     """, unsafe_allow_html=True)
 
 def complex_actress(conn):
-    st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Actress List</h1>", unsafe_allow_html=True)
 
     if 'actress_initial' not in st.session_state:
         st.session_state.actress_initial = False
+    if 'actress_page' not in st.session_state:
+        st.session_state.actress_page = 'home'
+    if 'scroll_to_top' not in st.session_state:
+        st.session_state.scroll_to_top = False
+
+    if st.session_state.scroll_to_top:
+        scroll_to_here(0,key='top')  # Scroll to the top of the page
+        st.session_state.scroll_to_top = False  # Reset the state after scrolling
 
     # Fungsi untuk refresh data dari Google Sheets
     def refresh_data(conn):
@@ -1246,21 +1257,12 @@ def complex_actress(conn):
         except:
             return None
 
-    # Dialog untuk menampilkan detail lengkap
-    @st.dialog("🎬 Actress Details", width="medium")
-    def show_actress_details():
-        index = st.session_state.viewing_index
-        
-        if index is None or index >= len(df):
-            st.warning("No actress selected")
-            return
-            
-        if st.session_state.editing_index == index:
-            show_edit_mode(index)
-        else:
-            show_view_mode(index)
+    if st.session_state.actress_page == 'view':
+        st.space('small')
+        st.markdown("<h3 style='text-align: center; margin-bottom: 15px;'>🌟 Actress Details</h3>", unsafe_allow_html=True)
 
-    def show_view_mode(index):
+        index = st.session_state.viewing_index
+        df = st.session_state.actress_filtered
         actress = df.iloc[index]
         
         # Layout utama dengan gambar dan info dasar
@@ -1285,13 +1287,15 @@ def complex_actress(conn):
             with button_container:
                 if st.button("✏️ Edit", width='stretch', key=f"edit_btn_{index}"):
                     st.session_state.editing_index = index
+                    st.session_state.actress_page = 'edit'
                     st.rerun()
 
                 if st.button("❌ Close", width='stretch', key=f"close_{index}"):
                     st.session_state.viewing_index = None
                     st.session_state.editing_index = None
+                    st.session_state.actress_page = 'home'
                     st.rerun()
-        
+
         with col2:
             # Info dasar dalam metrics
             st.markdown("### Basic Information")
@@ -1358,12 +1362,14 @@ def complex_actress(conn):
         if st.button("Close", width='stretch', key=f'cancel_{index}', type='primary'):
             st.session_state.viewing_index = None
             st.session_state.editing_index = None
+            st.session_state.actress_page = 'home'
             st.rerun()
 
-    def show_edit_mode(index):
+    elif st.session_state.actress_page == 'edit':
+        index = st.session_state.viewing_index
         actress = df.iloc[index]
         
-        st.markdown(f"### ✏️ Editing: {actress['Name (Alphabet)']}")
+        st.markdown(f"#### ✏️ Editing: {actress['Name (Alphabet)']}")
         
         # Layout columns
         col1, col2 = st.columns([1, 2])
@@ -1380,11 +1386,13 @@ def complex_actress(conn):
             # Tombol aksi
             if st.button("← Back to View", width='stretch', key=f"back_{index}"):
                 st.session_state.editing_index = None
+                st.session_state.actress_page = 'view'
                 st.rerun()
             
             if st.button("Close", width='stretch', key=f"close_{index}"):
                 st.session_state.viewing_index = None
                 st.session_state.editing_index = None
+                st.session_state.actress_page = 'home'
                 st.rerun()
                 
             if st.button("🗑️ Delete Actress", width='stretch', type="secondary", key=f"delete_{index}"):
@@ -1591,42 +1599,44 @@ def complex_actress(conn):
             
             # Update ke Google Sheets
             if update_google_sheets(df,conn,'actress'):
-                st.success("✅ Data updated successfully in Google Sheets!")
                 st.session_state.actress_df = values_handling(df,'actress')  # Update session state
             else:
                 st.error("❌ Failed to update Google Sheets")
+                st.stop()
             
             st.session_state.editing_index = None
+            st.session_state.actress_page = 'home'
             st.rerun()
             
 
-    def delete_actress(index):
-        # Hapus data dari DataFrame
-        actress = df.loc[index]
-        pic_filename = str(actress['Picture']).split('/')[-1]
-        pic_id = pic_filename.split('.')[0]
+        def delete_actress(index):
+            # Hapus data dari DataFrame
+            actress = df.loc[index]
+            pic_filename = str(actress['Picture']).split('/')[-1]
+            pic_id = pic_filename.split('.')[0]
 
-        if 'placeholder' not in pic_id:
-            delete_cloudinary_image(pic_id)
+            if 'placeholder' not in pic_id:
+                delete_cloudinary_image(pic_id)
 
-        df.drop(index, inplace=True)
-        df.reset_index(drop=True, inplace=True)
-        
-        # Update ke Google Sheets
-        if update_google_sheets(df,conn,'actress'):
-            st.success("✅ Actress deleted successfully from Google Sheets!")
-            st.session_state.actress_df = values_handling(df,'actress')  # Update session state
-        else:
-            st.error("❌ Failed to delete actress from Google Sheets")
-        
-        st.session_state.editing_index = None
-        st.session_state.viewing_index = None
-        st.rerun()
+            df.drop(index, inplace=True)
+            df.reset_index(drop=True, inplace=True)
+            
+            # Update ke Google Sheets
+            if update_google_sheets(df,conn,'actress'):
+                st.success("✅ Actress deleted successfully from Google Sheets!")
+                st.session_state.actress_df = values_handling(df,'actress')  # Update session state
+            else:
+                st.error("❌ Failed to delete actress from Google Sheets")
+            
+            st.session_state.editing_index = None
+            st.session_state.viewing_index = None
+            st.session_state.actress_page = 'home'
+            st.rerun()
     
         
-    # Dialog untuk menambah aktris baru
-    @st.dialog("➕ Add New Actress", width="small")
-    def add_new_actress():
+    
+    elif st.session_state.actress_page == 'add':
+        st.markdown("<h3 style='text-align: center; margin-bottom: 15px;'>➕ Add New Actress</h3>", unsafe_allow_html=True)
         if st.session_state.get('reset_flag', False):
             st.session_state.reset_flage = False
             st.session_state.new_review = REVIEW_OPTS[0]
@@ -1777,6 +1787,7 @@ def complex_actress(conn):
                         st.stop()
                     
                     st.session_state.adding_new = False
+                    st.session_state.actress_page = 'home'
                     st.rerun()
             else:
                 st.error('Fill mandatory fields first! (*)') # Error disini
@@ -1784,237 +1795,260 @@ def complex_actress(conn):
         
         if cancel_new:
             st.session_state.adding_new = False
+            st.session_state.actress_page = 'home'
             st.rerun()
 
-    # Sidebar
-    with st.sidebar:
-        if st.button('⬅️ Back', width='stretch'):
-            return 'home'
-        st.header(f'Actress Listed : {len(st.session_state.actress_df)}')
-        st.markdown("---")
-        with st.container(key='review_filter'):
-            st.header("Review Filters")
-            show_actress_goat = st.checkbox("Goat", value=True)
-            show_actress_watched = st.checkbox("Watched", value=True)
-            show_actress_not_watched = st.checkbox("Not Watched", value=True)
-        with st.container(key='Favourite'):
-            st.header("Favourite Filters")
-            show_favourite = st.checkbox("Favourite",value=False)
-        
-        st.markdown("---")
-        st.subheader("Management")
-        if st.button("➕ Add New Actress", width='stretch'):
-            st.session_state.adding_new = True
-        
-        # # Tombol refresh data
-        # if st.button("🔄 Refresh Data", width='stretch'):
-        #     refresh_data()
-        #     st.rerun()
-        
-        if st.button('🔐 Logout', width='stretch'):
-            st.session_state.clear()
-            return 'login'
-
-    # Tampilkan dialog add new jika needed
-    if st.session_state.adding_new:
-        add_new_actress()
-
-    # Tampilkan dialog details jika needed
-    if st.session_state.viewing_index is not None:
-        show_actress_details()
-
-    # # Tampilkan grid actress
-    # with mid:
-    if not df.empty and 'Picture' in df.columns:
-        if st.session_state.get('search_reset', False):
-            st.session_state.search_reset = False
-            st.session_state.search_bar = ''
-        
-        search_container = st.container(horizontal=True, vertical_alignment='bottom')
-
-        with search_container:
-            search_query = st.text_input("🔍 Search actress by Name (Alphabet / Kanji):", 
-                            placeholder="Type name to search...", key='search_bar')
-            if st.button('Clear'):
-                st.session_state.search_reset = True
+    elif st.session_state.actress_page == 'home':
+        # Sidebar
+        with st.sidebar:
+            if st.button('⬅️ Back', width='stretch'):
+                return 'home'
+            st.header(f'Actress Listed : {len(st.session_state.actress_df)}')
+            st.markdown("---")
+            with st.container(key='review_filter'):
+                st.header("Review Filters")
+                show_actress_watched = st.checkbox("Watched", value=True)
+                show_actress_not_watched = st.checkbox("Not Watched", value=True)
+            with st.container(key='Favourite'):
+                st.header("Favourite Filters")
+                show_favourite = st.checkbox("Favourite",value=False)
+            
+            st.markdown("---")
+            st.subheader("Management")
+            if st.button("➕ Add New Actress", width='stretch'):
+                st.session_state.adding_new = True
+                st.session_state.actress_page = 'add'
                 st.rerun()
-
-        # Filter DataFrame berdasarkan status
-        filtered_df = df.copy()
-        filtered_df = filtered_df.sort_values(by='Name (Alphabet)', ascending=True)
-
-        # Buat kondisi filter
-        review_conditions = []
-        if show_actress_goat:
-            review_conditions.append(filtered_df['Review'].str.lower() == 'goat')
-        if show_actress_watched:
-            review_conditions.append(filtered_df['Review'].str.lower() == 'watched')
-        if show_actress_not_watched:
-            review_conditions.append(filtered_df['Review'].str.lower() == 'not watched')
-        
-        favourite_conditions = []
-        if show_favourite:
-            favourite_conditions.append(filtered_df['Favourite'] == 1.0)
-        else:
-            favourite_conditions.append(filtered_df['Favourite'] == 0.0)
-            favourite_conditions.append(filtered_df['Favourite'] == 1.0)
-
-        if review_conditions:
-            review_mask = review_conditions[0]
-            for cond in review_conditions[1:]:
-                review_mask |= cond
-        else:
-            review_mask = pd.Series(False, index=filtered_df.index)
-        
-        if favourite_conditions:
-            favourite_mask = favourite_conditions[0]
-            for cond in favourite_conditions[1:]:
-                favourite_mask |= cond
-        else:
-            favourite_mask = pd.Series(False, index=filtered_df.index)
-        
-        final_mask = review_mask & favourite_mask
-        filtered_df = filtered_df[final_mask]
-        if not search_query and not search_query.isspace() and not filtered_df.empty:
-            n_rows = (len(filtered_df) + 5 - 1) // 5
-            rows = [st.columns(5) for _ in range(n_rows)]
-            cols = [column for row in rows for column in row]
             
-            for i, (col, idx) in enumerate(zip(cols, filtered_df.index)):
-                actress = df.iloc[idx]
-                
-                try:
-                    with col:
-                        cat_url = actress['Picture'] if pd.notna(actress['Picture']) else ""
-                        name_text = actress['Name (Alphabet)'] if pd.notna(actress['Name (Alphabet)']) else ""
-                        native_text = actress['Name (Native)'] if pd.notna(actress['Name (Native)']) else ""
-                        
-                        review_class = actress["Review"].lower().strip().replace(" ", "-")
-
-                        # Buat card dengan HTML lengkap
-                        card_html = f"""
-                        <div class="card-wrapper">
-                            <div class="cat-card">
-                                <div class="badge-stack">
-                                    <div class="review-badge review-{review_class}">
-                                        {actress["Review"]}
-                                    </div>
-                                </div>
-                                <div class="cat-image-container">
-                                    <img src="{cat_url}" class="cat-image" width="150" height="150">
-                                </div>
-                                <div class="card-divider"></div>"""
-                        
-                        if name_text and native_text:
-                            card_html += f"""<div class="cat-name">{name_text}</div>
-                                <div class="cat-kanji">{native_text}</div>
-                            """
-                        elif name_text:
-                            card_html += f'<div class="cat-name">{name_text}</div>'
-                        elif native_text:
-                            card_html += f'<div class="cat-kanji">{native_text}</div>'
-                        
-                        card_html += """</div>
-                        </div>
-                        """
-                        
-                        st.markdown(card_html, unsafe_allow_html=True)
-                        
-                        # Button container untuk View Details
-                        if st.button("View Details", key=f"view_{idx}", width='stretch', type='primary'):
-                            st.session_state.viewing_index = idx
-                            st.session_state.editing_index = None
-                            show_actress_details()
-                            st.rerun()
-                            
-                except Exception as e:
-                    with col:
-                        error_html = """
-                        <div class="card-wrapper">
-                            <div class="cat-card">
-                                <div style="text-align: center; color: #e74c3c;">
-                                    <div style="font-size: 24px; margin-bottom: 10px;">😿🐐</div>
-                                    <div style="font-size: 14px;">Failed to load image</div>
-                                </div>
-                            </div>
-                        </div>
-                        """
-                        st.markdown(error_html, unsafe_allow_html=True)
-        elif search_query and not search_query.isspace() and not filtered_df.empty:
-            search_lower = search_query.lower().strip()
-            search_mask = (
-                filtered_df['Name (Alphabet)'].fillna('').str.lower().str.contains(search_lower, na=False) |
-                filtered_df['Name (Native)'].fillna('').str.contains(search_query.strip(), na=False)
-            )
-            filtered_df = filtered_df[search_mask]
-            st.info(f'Showing {len(filtered_df)} results')
-            n_rows = (len(filtered_df) + 5 - 1) // 5
-            rows = [st.columns(5) for _ in range(n_rows)]
-            cols = [column for row in rows for column in row]
+            # # Tombol refresh data
+            # if st.button("🔄 Refresh Data", width='stretch'):
+            #     refresh_data()
+            #     st.rerun()
             
-            for i, (col, idx) in enumerate(zip(cols, filtered_df.index)):
-                actress = df.iloc[idx]
+            if st.button('🔐 Logout', width='stretch'):
+                st.session_state.clear()
+                return 'login'
+
+        if not df.empty and 'Picture' in df.columns:
+            if st.session_state.get('search_reset', False):
+                st.session_state.search_reset = False
+                st.session_state.search_bar = ''
+            
+            search_container = st.container(horizontal=True, vertical_alignment='bottom')
+
+            with search_container:
+                search_query = st.text_input("🔍 Search actress by Name (Alphabet / Kanji):", 
+                                placeholder="Type name to search...", key='search_bar')
+                if st.button('Clear'):
+                    st.session_state.search_reset = True
+                    st.rerun()
+
+            # Filter DataFrame berdasarkan status
+            filtered_df = df.copy()
+            filtered_df = filtered_df.sort_values(by='Name (Alphabet)', ascending=True)
+
+            # Buat kondisi filter
+            review_conditions = []
+            if show_actress_watched:
+                review_conditions.append(filtered_df['Review'].str.lower() == 'watched')
+            if show_actress_not_watched:
+                review_conditions.append(filtered_df['Review'].str.lower() == 'not watched')
+            
+            favourite_conditions = []
+            if show_favourite:
+                favourite_conditions.append(filtered_df['Favourite'] == 1.0)
+            else:
+                favourite_conditions.append(filtered_df['Favourite'] == 0.0)
+                favourite_conditions.append(filtered_df['Favourite'] == 1.0)
+
+            if review_conditions:
+                review_mask = review_conditions[0]
+                for cond in review_conditions[1:]:
+                    review_mask |= cond
+            else:
+                review_mask = pd.Series(False, index=filtered_df.index)
+            
+            if favourite_conditions:
+                favourite_mask = favourite_conditions[0]
+                for cond in favourite_conditions[1:]:
+                    favourite_mask |= cond
+            else:
+                favourite_mask = pd.Series(False, index=filtered_df.index)
+            
+            final_mask = review_mask & favourite_mask
+            filtered_df = filtered_df[final_mask]
+            if not search_query and not search_query.isspace() and not filtered_df.empty:
+                st.write('')
+            elif search_query and not search_query.isspace() and not filtered_df.empty:
+                search_lower = search_query.lower().strip()
+                search_mask = (
+                    filtered_df['Name (Alphabet)'].fillna('').str.lower().str.contains(search_lower, na=False) |
+                    filtered_df['Name (Native)'].fillna('').str.contains(search_query.strip(), na=False)
+                )
+                filtered_df = filtered_df[search_mask]
+                st.info(f'Showing {len(filtered_df)} results')
+            
+            else:
+                st.warning("No actresses match the selected filters.")
+                st.stop()
                 
-                try:
-                    with col:
-                        cat_url = actress['Picture'] if pd.notna(actress['Picture']) else ""
-                        name_text = actress['Name (Alphabet)'] if pd.notna(actress['Name (Alphabet)']) else ""
-                        native_text = actress['Name (Native)'] if pd.notna(actress['Name (Native)']) else ""
+            try:
+                names = filtered_df.loc[filtered_df["Picture"].notna(), "Name (Alphabet)"].fillna("").tolist()
+
+                clicked = clickable_images(
+                    filtered_df['Picture'].dropna().tolist(),
+                    titles=filtered_df["Name (Alphabet)"].fillna("").tolist(),
+                    div_style={
+                        "display": "grid",
+                        "grid-template-columns": "repeat(3, 1fr)",
+                        "gap": "8px",
+                        "width": "100%"
+                    },
+                    img_style={
+                        "width": "100%",        
+                        "aspect-ratio": "1 / 1", 
+                        "object-fit": "cover",
+                        "border-radius": "15%",
+                        "cursor": "pointer"
+                    }
+                )
+
+                if clicked > -1:
+                    st.session_state.viewing_index = clicked
+                    st.session_state.actress_filtered = filtered_df
+                    st.session_state.editing_index = None
+                    st.session_state.actress_page = 'view'
+                    st.session_state.scroll_to_top = True
+                    
+                    # Gunakan callback atau langsung panggil st.rerun()
+                    st.rerun()
                         
-                        review_class = actress["Review"].lower().strip().replace(" ", "-")
-                        
-                        # Buat card dengan HTML lengkap
-                        card_html = f"""
-                        <div class="card-wrapper">
-                            <div class="cat-card">
-                                <div class="badge-stack">
-                                    <div class="review-badge review-{review_class}">
-                                        {actress["Review"]}
-                                    </div>
-                                </div>
-                                <div class="cat-image-container">
-                                    <img src="{cat_url}" class="cat-image" width="150" height="150">
-                                </div>
-                                <div class="card-divider"></div>"""
-                        
-                        if name_text and native_text:
-                            card_html += f"""<div class="cat-name">{name_text}</div>
-                                <div class="cat-native">{native_text}</div>
-                            """
-                        elif name_text:
-                            card_html += f'<div class="cat-name">{name_text}</div>'
-                        elif native_text:
-                            card_html += f'<div class="cat-native">{native_text}</div>'
-                        
-                        card_html += """</div>
-                        </div>
-                        """
-                        
-                        st.markdown(card_html, unsafe_allow_html=True)
-                        
-                        # Button container untuk View Details
-                        if st.button("View Details", key=f"view_{idx}", width='stretch', type='primary'):
-                            st.session_state.viewing_index = idx
-                            st.session_state.editing_index = None
-                            st.rerun()
-                            
-                except Exception as e:
-                    with col:
-                        error_html = """
-                        <div class="card-wrapper">
-                            <div class="cat-card">
-                                <div style="text-align: center; color: #e74c3c;">
-                                    <div style="font-size: 24px; margin-bottom: 10px;">😿</div>
-                                    <div style="font-size: 14px;">Failed to load image</div>
-                                </div>
-                            </div>
-                        </div>
-                        """
-                        st.markdown(error_html, unsafe_allow_html=True)
+            except Exception as e:
+                st.error(f'Error Generate Image: {e}')
+                st.stop()
         else:
-            st.warning("No actresses match the selected filters.")
-    else:
-        st.info("No actress data available. Click 'Add New Actress' to get started!")
+            st.info("No actress data available. Click 'Add New Actress' to get started!")
+        
+        st.markdown("""
+        <style>
+        /* ================= DESKTOP ================= */
+        @media (min-width: 768px) {
+            section[data-testid="stSidebar"] {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                height: 100% !important;
+                width: 400px !important;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                z-index: 999999 !important;
+                box-shadow: 2px 0 20px rgba(0,0,0,0.2) !important;
+            }
+
+            section[data-testid="stSidebar"][aria-expanded="true"] {
+                transform: translateX(0) !important;
+            }
+
+            .main .block-container {
+                padding-left: 1rem !important;
+                padding-right: 1rem !important;
+                max-width: 100% !important;
+            }
+        }
+
+        /* ================= MOBILE ================= */
+        @media (max-width: 767px) {
+            section[data-testid="stSidebar"] {
+                position: fixed !important;
+                top: 0 !important;
+                left: 0 !important;
+                height: 100vh !important;
+                width: 100vw !important;
+                max-width: 100vw !important;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+                z-index: 999999 !important;
+            }
+
+            section[data-testid="stSidebar"][aria-expanded="true"] {
+                transform: translateX(0) !important;
+            }
+
+            .stSidebarCollapseButton button {
+                position: fixed !important;
+                top: 10px !important;
+                right: 10px !important;
+                z-index: 1000000 !important;
+                font-size: 24px !important;
+                padding: 14px !important;
+                background: rgba(0,0,0,0.1) !important;
+                border-radius: 50% !important;
+            }
+
+            .main .block-container {
+                padding: 1rem !important;
+            }
+        }
+
+        /* ================= OVERLAY ================= */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 999998;
+            backdrop-filter: blur(2px);
+        }
+
+        /* Hide default arrow */
+        [data-testid="collapsedControl"] {
+            display: none !important;
+        }
+        </style>
+
+        <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            const waitForSidebar = setInterval(() => {
+                const sidebar = document.querySelector('section[data-testid="stSidebar"]');
+                const closeBtn = sidebar?.querySelector('button[kind="header"]');
+
+                if (sidebar && closeBtn) {
+                    clearInterval(waitForSidebar);
+
+                    /* ===== AUTO CLOSE ON FIRST LOAD ===== */
+                    if (sidebar.getAttribute('aria-expanded') === 'true') {
+                        closeBtn.click();
+                    }
+
+                    /* ===== CREATE OVERLAY ===== */
+                    const overlay = document.createElement('div');
+                    overlay.className = 'sidebar-overlay';
+                    document.body.appendChild(overlay);
+
+                    /* ===== OBSERVE SIDEBAR STATE ===== */
+                    const observer = new MutationObserver(() => {
+                        const expanded = sidebar.getAttribute('aria-expanded') === 'true';
+                        overlay.style.display = expanded ? 'block' : 'none';
+                        document.body.style.overflow = expanded ? 'hidden' : 'auto';
+                    });
+
+                    observer.observe(sidebar, { attributes: true });
+
+                    /* ===== CLICK OVERLAY TO CLOSE ===== */
+                    overlay.addEventListener('click', () => closeBtn.click());
+
+                    /* ===== ESC KEY TO CLOSE ===== */
+                    document.addEventListener('keydown', (e) => {
+                        if (e.key === 'Escape' && overlay.style.display === 'block') {
+                            closeBtn.click();
+                        }
+                    });
+                }
+            }, 100);
+        });
+        </script>
+        """, unsafe_allow_html=True)
 
     # CSS untuk styling card yang estetik
     st.markdown("""
@@ -2144,125 +2178,4 @@ def complex_actress(conn):
             flex: 1;
         }
     </style>
-    """, unsafe_allow_html=True)
-
-    st.markdown("""
-    <style>
-    /* ================= DESKTOP ================= */
-    @media (min-width: 768px) {
-        section[data-testid="stSidebar"] {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            height: 100% !important;
-            width: 400px !important;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out;
-            z-index: 999999 !important;
-            box-shadow: 2px 0 20px rgba(0,0,0,0.2) !important;
-        }
-
-        section[data-testid="stSidebar"][aria-expanded="true"] {
-            transform: translateX(0) !important;
-        }
-
-        .main .block-container {
-            padding-left: 1rem !important;
-            padding-right: 1rem !important;
-            max-width: 100% !important;
-        }
-    }
-
-    /* ================= MOBILE ================= */
-    @media (max-width: 767px) {
-        section[data-testid="stSidebar"] {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            height: 100vh !important;
-            width: 100vw !important;
-            max-width: 100vw !important;
-            transform: translateX(-100%);
-            transition: transform 0.3s ease-in-out;
-            z-index: 999999 !important;
-        }
-
-        section[data-testid="stSidebar"][aria-expanded="true"] {
-            transform: translateX(0) !important;
-        }
-
-        .stSidebarCollapseButton button {
-            position: fixed !important;
-            top: 10px !important;
-            right: 10px !important;
-            z-index: 1000000 !important;
-            font-size: 24px !important;
-            padding: 14px !important;
-            background: rgba(0,0,0,0.1) !important;
-            border-radius: 50% !important;
-        }
-
-        .main .block-container {
-            padding: 1rem !important;
-        }
-    }
-
-    /* ================= OVERLAY ================= */
-    .sidebar-overlay {
-        display: none;
-        position: fixed;
-        inset: 0;
-        background: rgba(0,0,0,0.5);
-        z-index: 999998;
-        backdrop-filter: blur(2px);
-    }
-
-    /* Hide default arrow */
-    [data-testid="collapsedControl"] {
-        display: none !important;
-    }
-    </style>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-
-        const waitForSidebar = setInterval(() => {
-            const sidebar = document.querySelector('section[data-testid="stSidebar"]');
-            const closeBtn = sidebar?.querySelector('button[kind="header"]');
-
-            if (sidebar && closeBtn) {
-                clearInterval(waitForSidebar);
-
-                /* ===== AUTO CLOSE ON FIRST LOAD ===== */
-                if (sidebar.getAttribute('aria-expanded') === 'true') {
-                    closeBtn.click();
-                }
-
-                /* ===== CREATE OVERLAY ===== */
-                const overlay = document.createElement('div');
-                overlay.className = 'sidebar-overlay';
-                document.body.appendChild(overlay);
-
-                /* ===== OBSERVE SIDEBAR STATE ===== */
-                const observer = new MutationObserver(() => {
-                    const expanded = sidebar.getAttribute('aria-expanded') === 'true';
-                    overlay.style.display = expanded ? 'block' : 'none';
-                    document.body.style.overflow = expanded ? 'hidden' : 'auto';
-                });
-
-                observer.observe(sidebar, { attributes: true });
-
-                /* ===== CLICK OVERLAY TO CLOSE ===== */
-                overlay.addEventListener('click', () => closeBtn.click());
-
-                /* ===== ESC KEY TO CLOSE ===== */
-                document.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape' && overlay.style.display === 'block') {
-                        closeBtn.click();
-                    }
-                });
-            }
-        }, 100);
-    });
-    </script>
     """, unsafe_allow_html=True)
