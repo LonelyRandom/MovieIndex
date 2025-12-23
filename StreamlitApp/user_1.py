@@ -389,11 +389,11 @@ def display_single_card(col, actress, card_id):
             <!-- Code and Date -->
             <div style="margin-bottom: 15px;">
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-                    <span style="font-weight: bold; color: #555;">🎬 Code</span>
+                    <span style="font-weight: bold; color: #555;">🎬 Title</span>
                     <span style="color: #e74c3c; font-weight: bold;">{actress['Title']}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between;">
-                    <span style="font-weight: bold; color: #555;">📅 Release Date</span>
+                    <span style="font-weight: bold; color: #555;">🎥 Type</span>
                     <span style="color: #3498db;">{actress['Type']}</span>
                 </div>
             </div>
@@ -524,7 +524,7 @@ def complex_home(conn):
                     st.metric('Watched',len(df_actress[df_actress['Review'] == 'Watched']))
                 with st.container(key='Actress Info 2', horizontal=False):
                     st.metric('Not Watched', len(df_actress[df_actress['Review'] == 'Not Watched']))
-                    st.metric('Goat', len(df_actress[df_actress['Review'] == 'Goat']))
+                    st.metric('Favourite', len(df_actress[df_actress['Favourite'] == 1]))
             if st.button('Go To Actress →'):
                 return 'actress'
     with right:
@@ -1366,7 +1366,8 @@ def complex_actress(conn):
             st.rerun()
 
     elif st.session_state.actress_page == 'edit':
-        index = st.session_state.viewing_index
+        index = st.session_state.editing_index
+        df = st.session_state.actress_filtered
         actress = df.iloc[index]
         
         st.markdown(f"#### ✏️ Editing: {actress['Name (Alphabet)']}")
