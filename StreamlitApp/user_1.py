@@ -464,7 +464,7 @@ def complex_film(conn):
         with st.container(horizontal_alignment='center'): 
             st.markdown(f"### ✏️ Editing: {film['Title']}")
             st.image(film['Picture'], width=250)
-            new_pic = st.file_uploader('Change Image', type=['png', 'jpg', 'jpeg'], key=f'film_picture_{index}')
+            new_pic = st.file_uploader('Change Image', type=['png', 'jpg', 'jpeg', 'webp'], key=f'film_picture_{index}')
             if new_pic is not None:
                 st.image(new_pic, width=250)
     
@@ -710,7 +710,7 @@ def complex_film(conn):
         
         reset_film = st.session_state.new_film_reset
 
-        new_picture = st.file_uploader('Image', type=['png', 'jpg', 'jpeg'], key=f'new_film_picture_{reset_film}')
+        new_picture = st.file_uploader('Image', type=['png', 'jpg', 'jpeg', 'webp'], key=f'new_film_picture_{reset_film}')
         
         if not new_picture is None:
             with st.container(horizontal_alignment='center'):
@@ -1384,7 +1384,7 @@ def complex_actress(conn):
                 delete_actress(index)
 
             # Image uploader
-            new_pic = st.file_uploader("Change Image", type=['png', 'jpg', 'jpeg'], key=f"uploader_{index}")
+            new_pic = st.file_uploader("Change Image", type=['png', 'jpg', 'jpeg', 'webp'], key=f"uploader_{index}")
         with col2:
             # Basic Information
             review_index = REVIEW_OPTS.index(actress['Review']) if actress['Review'] in REVIEW_OPTS else 0
@@ -1628,7 +1628,7 @@ def complex_actress(conn):
         # Basic Information
         st.subheader("Basic Information")
 
-        new_picture = st.file_uploader("Image", type=['png', 'jpg', 'jpeg'], key=f'new_picture_{reset_pic}')
+        new_picture = st.file_uploader("Image", type=['png', 'jpg', 'jpeg', 'webp'], key=f'new_picture_{reset_pic}')
 
         if not new_picture is None:
             with st.container(horizontal_alignment='center'):
