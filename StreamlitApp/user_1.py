@@ -722,8 +722,8 @@ def complex_film(conn):
 
         selected_actress = st.multiselect('Actress*', key='new_actresses', options=ACTRESS_OPTS)
 
+        new_act_error = False
         if st.checkbox('New Actress', key='new_actress_check'):
-            new_act_error = False
             new_actress = '?'
             st.markdown('---')
             new_actress_input = st.text_input('New Actress Name*', placeholder='Alphabet, Kanji')
@@ -1272,7 +1272,7 @@ def complex_actress(conn):
                         age_text = f"{calculated_age}"
                 
                 if age_text:
-                    st.metric("Age", f"{age_text} years")
+                    st.metric("Age", f"{int(age_text)} years")
 
                 # Birthdate
                 if actress['Birthdate'] != '?':
