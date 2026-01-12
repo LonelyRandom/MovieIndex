@@ -57,6 +57,7 @@ INFO_OPTS_M = [
 ]
 
 GENRE_OPTS = [
+    "Action",
     "Comedy",
     "Romance",
     "Slice of Life",
