@@ -509,8 +509,8 @@ def complex_film(conn):
         .tolist()
     )
 
-    ACTRESS_OPTS = ['None'] + sorted(
-        actress_df.loc[actress_df['Name (Alphabet)'] != 'None', 'Name (Alphabet)']
+    ACTRESS_OPTS = ['No One'] + sorted(
+        actress_df.loc[actress_df['Name (Alphabet)'] != 'No One', 'Name (Alphabet)']
         .dropna()
         .unique()
         .tolist()
