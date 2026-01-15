@@ -1963,6 +1963,7 @@ def complex_actress(conn):
                 st.session_state.search_reset = False
                 st.session_state.search_bar = ''
             st.space('small')    
+            st.space('small')    
             
             search_container = st.container(horizontal=True, vertical_alignment='bottom')
 
@@ -2057,19 +2058,19 @@ def complex_actress(conn):
                     st.error(f'Error Generate Image: {e}')
                     st.stop()
             else:
-                for index in filtered_df.index:
+                for index in range(0,len(filtered_df)):
                     with st.container(key=f'actress_card_{index}'):
-                        st.markdown(f'###### {filtered_df["Name (Alphabet)"][index]} -- {filtered_df["Name (Native)"][index]}')
+                        st.markdown(f'###### {filtered_df["Name (Alphabet)"].iloc[index]} -- {filtered_df["Name (Native)"].iloc[index]}')
                         with st.container(horizontal=True):
-                            st.image(filtered_df['Picture'][index], width=120)
+                            st.image(filtered_df['Picture'].iloc[index], width=120)
                             with st.container(horizontal=False, width='content'):
-                                if filtered_df['Birthdate'][index] == '?':
+                                if filtered_df['Birthdate'].iloc[index] == '?':
                                     st.write('🎂 DoB : ?')
                                 else:
-                                    st.write(f'🎂 DoB : {datetime.strptime(filtered_df["Birthdate"][index],"%d/%m/%Y").date().strftime("%b %d, %Y")}')
-                                st.write(f'👧 Age : {filtered_df["Age"][index]}')
-                                st.write(f'🌍 Country : {filtered_df["Nationality"][index]}')
-                        if st.button('🔍 View Details', key=f"button_{filtered_df['Name (Alphabet)'][index]}", width='stretch'):
+                                    st.write(f'🎂 DoB : {datetime.strptime(filtered_df["Birthdate"].iloc[index],"%d/%m/%Y").date().strftime("%b %d, %Y")}')
+                                st.write(f'👧 Age : {filtered_df["Age"].iloc[index]}')
+                                st.write(f'🌍 Country : {filtered_df["Nationality"].iloc[index]}')
+                        if st.button('🔍 View Details', key=f"button_{filtered_df['Name (Alphabet)'].iloc[index]}", width='stretch'):
                             st.session_state.viewing_index = index
                             st.session_state.actress_filtered = filtered_df
                             st.session_state.editing_index = None
