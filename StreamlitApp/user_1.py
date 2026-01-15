@@ -1292,6 +1292,8 @@ def complex_actress(conn):
         st.session_state.actress_page = 'home'
     if 'scroll_to_top' not in st.session_state:
         st.session_state.scroll_to_top = False
+    if 'display_mode' not in st.session_state:
+        st.session_state.display_mode = 'Gallery'
 
     if st.session_state.scroll_to_top:
         scroll_to_here(0,key='top')  # Scroll to the top of the page
@@ -1395,6 +1397,7 @@ def complex_actress(conn):
                     st.session_state.viewing_index = None
                     st.session_state.editing_index = None
                     st.session_state.actress_page = 'home'
+                    st.session_state.scroll_to_top = True
                     st.rerun()
 
         with col2:
@@ -1468,6 +1471,7 @@ def complex_actress(conn):
             st.session_state.viewing_index = None
             st.session_state.editing_index = None
             st.session_state.actress_page = 'home'
+            st.session_state.scroll_to_top = True   
             st.rerun()
 
     elif st.session_state.actress_page == 'edit':
@@ -1516,16 +1520,21 @@ def complex_actress(conn):
             if st.button("← Back to View", width='stretch', key=f"back_{index}"):
                 st.session_state.editing_index = None
                 st.session_state.actress_page = 'view'
+                st.session_state.scroll_to_top = True
+
                 st.rerun()
             
             if st.button("Close", width='stretch', key=f"close_{index}"):
                 st.session_state.viewing_index = None
                 st.session_state.editing_index = None
                 st.session_state.actress_page = 'home'
+                st.session_state.scroll_to_top = True
                 st.rerun()
                 
             if st.button("🗑️ Delete Actress", width='stretch', type="secondary", key=f"delete_{index}"):
                 delete_actress(index)
+                st.session_state.scroll_to_top = True
+
 
             # Image uploader
             new_pic = st.file_uploader("Change Image", type=['png', 'jpg', 'jpeg', 'webp'], key=f"uploader_{index}")
@@ -1741,11 +1750,8 @@ def complex_actress(conn):
             
             st.session_state.editing_index = None
             st.session_state.actress_page = 'home'
+            st.session_state.scroll_to_top = True
             st.rerun()
-            
-
-    
-        
     
     elif st.session_state.actress_page == 'add':
         st.space('small')
@@ -1900,6 +1906,7 @@ def complex_actress(conn):
                     
                     st.session_state.adding_new = False
                     st.session_state.actress_page = 'home'
+                    st.session_state.scroll_to_top = True
                     st.rerun()
             else:
                 st.error('Fill mandatory fields first! (*)') # Error disini
@@ -1908,6 +1915,7 @@ def complex_actress(conn):
         if cancel_new:
             st.session_state.adding_new = False
             st.session_state.actress_page = 'home'
+            st.session_state.scroll_to_top = True
             st.rerun()
 
     elif st.session_state.actress_page == 'home':
@@ -1916,6 +1924,14 @@ def complex_actress(conn):
             if st.button('⬅️ Back', width='stretch'):
                 return 'home'
             st.header(f'Actress Listed : {len(st.session_state.actress_df)}')
+            st.markdown("---")
+            st.header("⚙️ Display Settings")
+            st.session_state.display_mode = st.radio(
+                "View Mode",
+                ["Gallery", "List"],
+                key='display_mode_radio',
+                index=0 if st.session_state.display_mode == "Gallery" else 1
+            )
             st.markdown("---")
             with st.container(key='review_filter'):
                 st.header("Review Filters")
@@ -1946,6 +1962,7 @@ def complex_actress(conn):
             if st.session_state.get('search_reset', False):
                 st.session_state.search_reset = False
                 st.session_state.search_bar = ''
+            st.space('small')    
             
             search_container = st.container(horizontal=True, vertical_alignment='bottom')
 
@@ -2005,39 +2022,62 @@ def complex_actress(conn):
             else:
                 st.warning("No actresses match the selected filters.")
                 st.stop()
-                
-            try:
-                clicked = clickable_images(
-                    filtered_df['Picture'].dropna().tolist(),
-                    titles=filtered_df["Name (Alphabet)"].fillna("").tolist(),
-                    div_style={
-                        "display": "grid",
-                        "grid-template-columns": "repeat(3, 1fr)",
-                        "gap": "8px",
-                        "width": "100%"
-                    },
-                    img_style={
-                        "width": "100%",        
-                        "aspect-ratio": "1 / 1", 
-                        "object-fit": "cover",
-                        "border-radius": "15%",
-                        "cursor": "pointer"
-                    }
-                )
 
-                if clicked > -1:
-                    st.session_state.viewing_index = clicked
-                    st.session_state.actress_filtered = filtered_df
-                    st.session_state.editing_index = None
-                    st.session_state.actress_page = 'view'
-                    st.session_state.scroll_to_top = True
-                    
-                    # Gunakan callback atau langsung panggil st.rerun()
-                    st.rerun()
+            if st.session_state.display_mode == "Gallery":
+                try:
+                    clicked = clickable_images(
+                        filtered_df['Picture'].dropna().tolist(),
+                        titles=filtered_df["Name (Alphabet)"].fillna("").tolist(),
+                        div_style={
+                            "display": "grid",
+                            "grid-template-columns": "repeat(3, 1fr)",
+                            "gap": "8px",
+                            "width": "100%"
+                        },
+                        img_style={
+                            "width": "100%",        
+                            "aspect-ratio": "1 / 1", 
+                            "object-fit": "cover",
+                            "border-radius": "15%",
+                            "cursor": "pointer"
+                        }
+                    )
+
+                    if clicked > -1:
+                        st.session_state.viewing_index = clicked
+                        st.session_state.actress_filtered = filtered_df
+                        st.session_state.editing_index = None
+                        st.session_state.actress_page = 'view'
+                        st.session_state.scroll_to_top = True
                         
-            except Exception as e:
-                st.error(f'Error Generate Image: {e}')
-                st.stop()
+                        # Gunakan callback atau langsung panggil st.rerun()
+                        st.rerun()
+                            
+                except Exception as e:
+                    st.error(f'Error Generate Image: {e}')
+                    st.stop()
+            else:
+                for index in filtered_df.index:
+                    with st.container(key=f'actress_card_{index}'):
+                        st.markdown(f'###### {filtered_df["Name (Alphabet)"][index]} -- {filtered_df["Name (Native)"][index]}')
+                        with st.container(horizontal=True):
+                            st.image(filtered_df['Picture'][index], width=120)
+                            with st.container(horizontal=False, width='content'):
+                                if filtered_df['Birthdate'][index] == '?':
+                                    st.write('🎂 DoB : ?')
+                                else:
+                                    st.write(f'🎂 DoB : {datetime.strptime(filtered_df["Birthdate"][index],"%d/%m/%Y").date().strftime("%b %d, %Y")}')
+                                st.write(f'👧 Age : {filtered_df["Age"][index]}')
+                                st.write(f'🌍 Country : {filtered_df["Nationality"][index]}')
+                        if st.button('🔍 View Details', key=f"button_{filtered_df['Name (Alphabet)'][index]}", width='stretch'):
+                            st.session_state.viewing_index = index
+                            st.session_state.actress_filtered = filtered_df
+                            st.session_state.editing_index = None
+                            st.session_state.actress_page = 'view'
+                            st.session_state.scroll_to_top = True
+                            st.rerun()
+                        st.space('small')
+                
         else:
             st.info("No actress data available. Click 'Add New Actress' to get started!")
         
