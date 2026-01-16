@@ -59,10 +59,15 @@ INFO_OPTS_M = [
 GENRE_OPTS = [
     "Action",
     "Comedy",
+    "Drama",
+    "Fantasy",
     "Romance",
     "Slice of Life",
     "Thriller",
     "Horror",
+    "Live Action",
+    "Youth",
+    "Mystery",
     "Sci-Fi"
 ]
 
@@ -611,24 +616,24 @@ def complex_film(conn):
 
         edited_actress = ", ".join(selected_actress)
 
-        if st.checkbox('New Actress', key='new_actress_check'):
-            edited_actress = '?'
-            edited_actress_input = st.text_input('New Actress Name*', placeholder='Alphabet, Kanji')
-            if edited_actress_input:
-                try:
-                    edited_actress_name, edited_actress_native = edited_actress_input.split(', ')
-                    st.write('Name: ', edited_actress_name)
-                    st.write('Kanji: ', edited_actress_native)
-                except Exception as e:
-                    st.error(f'Error new actress: {e}')
+        # if st.checkbox('New Actress', key='new_actress_check'):
+        #     edited_actress = '?'
+        #     edited_actress_input = st.text_input('New Actress Name*', placeholder='Alphabet, Kanji')
+        #     if edited_actress_input:
+        #         try:
+        #             edited_actress_name, edited_actress_native = edited_actress_input.split(', ')
+        #             st.write('Name: ', edited_actress_name)
+        #             st.write('Kanji: ', edited_actress_native)
+        #         except Exception as e:
+        #             st.error(f'Error new actress: {e}')
             
-            edited_nationality = st.selectbox('New Actress Nationality', options=COUNTRY_OPTS)
-        elif selected_actress:
-            edited_actress = ", ".join(selected_actress)
-            edited_actress_input = '?'
-        else:
-            edited_actress = '?'
-            edited_actress_input = '?'
+        #     edited_nationality = st.selectbox('New Actress Nationality', options=COUNTRY_OPTS)
+        # elif selected_actress:
+        #     edited_actress = ", ".join(selected_actress)
+        #     edited_actress_input = '?'
+        # else:
+        #     edited_actress = '?'
+        #     edited_actress_input = '?'
 
         selected_genre = st.multiselect(
             'Genre', 
@@ -702,41 +707,41 @@ def complex_film(conn):
                 old_filename = str(film['Picture']).split('/')[-1]
                 old_public_id = old_filename.split('.')[0]
 
-                if ((edited_actress!='?')or(edited_actress_input!='?')):
-                    if edited_actress_input!='?':
-                        # Create edited row data
-                        edited_row = pd.DataFrame([{
-                            'Review': 'Not Checked',
-                            'Picture': st.secrets.indicators.PLACEHOLDER_IMG,
-                            'Name (Alphabet)': edited_actress_name,
-                            'Name (Native)': edited_actress_native,
-                            'Birthdate': '?',
-                            'Age': '?',
-                            'Nationality': edited_nationality,
-                            'Height (cm)': '? cm',
-                            'Job': 'Actress',
-                            'Favourite': '0',
+                # if ((edited_actress!='?')or(edited_actress_input!='?')):
+                #     if edited_actress_input!='?':
+                #         # Create edited row data
+                #         edited_row = pd.DataFrame([{
+                #             'Review': 'Not Checked',
+                #             'Picture': st.secrets.indicators.PLACEHOLDER_IMG,
+                #             'Name (Alphabet)': edited_actress_name,
+                #             'Name (Native)': edited_actress_native,
+                #             'Birthdate': '?',
+                #             'Age': '?',
+                #             'Nationality': edited_nationality,
+                #             'Height (cm)': '? cm',
+                #             'Job': 'Actress',
+                #             'Favourite': '0',
 
-                        }])
+                #         }])
                     
-                        # Add to DataFrame
-                        edited_name_native = edited_row['Name (Native)'].iloc[0]
-                        df_actress = st.session_state.actress_df
+                #         # Add to DataFrame
+                #         edited_name_native = edited_row['Name (Native)'].iloc[0]
+                #         df_actress = st.session_state.actress_df
 
-                        if edited_name_native in df_actress['Name (Native)'].values:
-                            st.warning(f"⚠️ Actress '{edited_name_native}' already exist in database with name!")
-                            st.stop()
-                        else:
-                            df_actress = pd.concat([df_actress, edited_row], ignore_index=True)   
-                            df_actress = df_actress.sort_values('Name (Alphabet)', key=lambda col: col.str.lower(), ascending=True, ignore_index=True)
-                            # Update ke Google Sheets
-                            if update_google_sheets(df_actress,conn,'actress'):
-                                st.success("✅ edited actress added successfully to Google Sheets!")
-                                st.session_state.actress_df = values_handling(df_actress,'actress')  # Update session state
-                            else:
-                                st.error("❌ Failed to add edited actress to Google Sheets")
-                                st.stop()
-                        edited_actress = edited_actress_name
+                #         if edited_name_native in df_actress['Name (Native)'].values:
+                #             st.warning(f"⚠️ Actress '{edited_name_native}' already exist in database with name!")
+                #             st.stop()
+                #         else:
+                #             df_actress = pd.concat([df_actress, edited_row], ignore_index=True)   
+                #             df_actress = df_actress.sort_values('Name (Alphabet)', key=lambda col: col.str.lower(), ascending=True, ignore_index=True)
+                #             # Update ke Google Sheets
+                #             if update_google_sheets(df_actress,conn,'actress'):
+                #                 st.success("✅ edited actress added successfully to Google Sheets!")
+                #                 st.session_state.actress_df = values_handling(df_actress,'actress')  # Update session state
+                #             else:
+                #                 st.error("❌ Failed to add edited actress to Google Sheets")
+                #                 st.stop()
+                #         edited_actress = edited_actress_name
 
                 # kalau cuma ganti foto
                 if new_pic and (edited_title == film['Title']):
@@ -953,6 +958,11 @@ def complex_film(conn):
             new_new_playlist = st.text_input('New Playlist', placeholder='Enter new playlist...', key='add_film_new_playlist')
             if new_new_playlist != '' or new_new_playlist != None:
                 new_playlist = new_new_playlist
+        
+        new_note = st.text_area('Note', placeholder='How do you think about the film/series...')
+
+        if new_note == '':
+            new_note = '--'
 
 
         with st.container(key='film_new_button', horizontal=True):
@@ -1012,7 +1022,8 @@ def complex_film(conn):
                         'Genre': new_genre,
                         'Rating': new_rating,
                         'Playlist': new_playlist,
-                        'Actress Name': new_actress
+                        'Actress Name': new_actress,
+                        'Note' : new_note
                     }])
 
                     df = st.session_state.film_df
@@ -1288,12 +1299,57 @@ def complex_actress(conn):
 
     if 'actress_initial' not in st.session_state:
         st.session_state.actress_initial = False
+    if 'film_initial' not in st.session_state:
+        st.session_state.film_initial = False
     if 'actress_page' not in st.session_state:
         st.session_state.actress_page = 'home'
     if 'scroll_to_top' not in st.session_state:
         st.session_state.scroll_to_top = False
     if 'display_mode' not in st.session_state:
         st.session_state.display_mode = 'Gallery'
+    if 'detail_movie_index' not in st.session_state:
+        st.session_state.detail_movie_index = None
+
+    @st.dialog("🎬 Film Details", width='small')
+    def show_movie_details():
+        index = st.session_state.detail_movie_index
+        film = film_df.iloc[index]
+
+        with st.container(key='poster_code', horizontal_alignment='center'):
+            st.markdown(f"<h2 style='text-align: center;'>{film['Title']}</h2>", unsafe_allow_html=True)
+            st.image(film['Picture'], width=200)
+        
+        st.markdown('### Actress')
+        st.write(film['Actress Name'])
+        with st.container(horizontal=True):
+            with st.container():
+                st.markdown('### Status')
+                st.write(film['Status'])
+
+                st.markdown('### Info')
+                st.write(film['Info'])
+
+                st.markdown('### Type')
+                st.write(film['Type'])
+        
+            with st.container():
+                st.markdown('### Episode')
+                st.write(f"{str(film['Current Episode'])}/{str(film['Episode'])}")
+
+                st.markdown('### Genre')
+                st.write(film['Genre'])
+
+                st.markdown('### Playlist')
+                st.warning(film['Playlist']) 
+        if film['Rating'] == '?':
+            st_star_rating(label='Rating', maxValue = 5, defaultValue = 0, key = "rating", read_only = True)
+        else:
+            st_star_rating(label='Rating', maxValue = 5, defaultValue = int(film['Rating']), key = "rating", read_only = True)
+
+        if st.button('❌ Close', width='stretch'):
+            st.session_state.viewing_film_index = None
+            st.session_state.editing_film_index = None
+            st.rerun()
 
     if st.session_state.scroll_to_top:
         scroll_to_here(0,key='top')  # Scroll to the top of the page
@@ -1332,6 +1388,9 @@ def complex_actress(conn):
     # Inisialisasi DataFrame
     if st.session_state.actress_initial == False:
         df = init_dataframe_actress(conn)
+    
+    if st.session_state.film_initial == False:
+        film_df = init_dataframe_film(conn)
 
     # Inisialisasi variabel kontrol
     if "editing_index" not in st.session_state:
@@ -1466,7 +1525,39 @@ def complex_actress(conn):
         st.warning(job_text)
 
         st.markdown("---")
-        
+
+        st.markdown("### Movies")
+        filtered_film = film_df[film_df['Actress Name'].str.contains(actress['Name (Alphabet)'])]
+        filtered_film['index'] = filtered_film.index
+
+        if not filtered_film.empty:
+            for i in range(0,len(filtered_film)):
+                with st.container(horizontal=True, key=f'film_title_{i}'):
+                    if st.button(f'🔍', key=f'film_details_{i}', width='content'):
+                        st.session_state.detail_movie_index = filtered_film['index'].iloc[i]
+                        show_movie_details()
+                    with st.container(width='stretch'):
+                        st.write(f'{filtered_film["Title"].iloc[i]}')
+                film_card_css = f"""
+                <style>
+                .st-key-film_title_{i} {{
+                    background-color: #1D546D;
+                    padding: 5px;
+                    border-radius: 5px;
+                    display: flex;
+                    align-items: center;
+                }}
+
+                .st-key-film_title_{i} p {{
+                    width: 100%;
+                    text-align: left;
+                }}
+                </style>
+                """
+                st.markdown(film_card_css, unsafe_allow_html=True)
+        else:
+            st.info('No Film')
+
         if st.button("Close", width='stretch', key=f'cancel_{index}', type='primary'):
             st.session_state.viewing_index = None
             st.session_state.editing_index = None
@@ -1690,7 +1781,7 @@ def complex_actress(conn):
             final_picture_url = actress['Picture']
 
             # kalau cuma ganti foto
-            if new_pic and (edited_native == actress['Name (Native)']) and not job_error:
+            if new_pic and (edited_name == actress['Name (Alphabet)']) and not job_error:
                 if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
                     try:
                         delete_cloudinary_image(old_public_id)
@@ -1704,7 +1795,7 @@ def complex_actress(conn):
                     st.stop()
                     return
             # kalau ganti foto dan code
-            elif new_pic and (edited_native != actress['Name (Native)']) and not job_error:
+            elif new_pic and (edited_name != actress['Name (Alphabet)']) and not job_error:
                 if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
                     try:
                         delete_cloudinary_image(old_public_id)
@@ -1717,7 +1808,7 @@ def complex_actress(conn):
                     st.error("Failed to upload new image")
                     st.stop()
             # kalau cuma ganti code
-            elif not new_pic and (edited_native != actress['Name (Native)']) and not job_error:
+            elif not new_pic and (edited_name != actress['Name (Alphabet)']) and not job_error:
                 if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
                     try:
                         final_picture_url = rename_cloudinary_image(old_public_id, clean_name)
@@ -2041,7 +2132,7 @@ def complex_actress(conn):
                             "object-fit": "cover",
                             "border-radius": "15%",
                             "cursor": "pointer"
-                        }
+                        } 
                     )
 
                     if clicked > -1:
@@ -2058,9 +2149,25 @@ def complex_actress(conn):
                     st.error(f'Error Generate Image: {e}')
                     st.stop()
             else:
+                
                 for index in range(0,len(filtered_df)):
+                    review_text = filtered_df['Review'].iloc[index]
+
+                    if review_text == 'Not Watched':
+                        review_icon = '🔴'
+                        review_color = 'red'
+                    elif review_text == 'Watched':
+                        review_icon = '🟢'
+                        review_color = 'green'
+                    else:
+                        review_icon = '⚪'
+                        review_color = 'grey'
                     with st.container(key=f'actress_card_{index}'):
-                        st.markdown(f'###### {filtered_df["Name (Alphabet)"].iloc[index]} -- {filtered_df["Name (Native)"].iloc[index]}')
+                        with st.container(horizontal=True, horizontal_alignment='distribute'):
+                            st.markdown(f'###### {filtered_df["Name (Alphabet)"].iloc[index]} -- {filtered_df["Name (Native)"].iloc[index]}')
+                            if filtered_df['Favourite'].iloc[index] == 1:
+                                st.badge(f"",icon='⭐', color='yellow',width='content')
+                        st.badge(f"{filtered_df['Review'].iloc[index]}",icon=review_icon, color=review_color)
                         with st.container(horizontal=True):
                             st.image(filtered_df['Picture'].iloc[index], width=120)
                             with st.container(horizontal=False, width='content'):
@@ -2077,7 +2184,17 @@ def complex_actress(conn):
                             st.session_state.actress_page = 'view'
                             st.session_state.scroll_to_top = True
                             st.rerun()
-                        st.space('small')
+                        actress_card_css = f"""<style>
+                                .st-key-actress_card_{index}"""
+                        actress_card_css+= """{
+                                    background-color: #1D546D;
+                                    padding: 5px;
+                                    border-radius: 5px;
+                                }
+                            </style>"""
+                        st.markdown(actress_card_css, unsafe_allow_html=True)
+                    st.space('small')
+                
                 
         else:
             st.info("No actress data available. Click 'Add New Actress' to get started!")
