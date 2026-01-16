@@ -1423,7 +1423,6 @@ def complex_actress(conn):
         st.markdown("<h3 style='text-align: center; margin-bottom: 15px;'>🌟 Actress Details</h3>", unsafe_allow_html=True)
 
         index = st.session_state.viewing_index
-        df = st.session_state.actress_filtered
         actress = df.iloc[index]
         
         # Layout utama dengan gambar dan info dasar
@@ -1528,13 +1527,12 @@ def complex_actress(conn):
 
         st.markdown("### Movies")
         filtered_film = film_df[film_df['Actress Name'].str.contains(actress['Name (Alphabet)'])]
-        filtered_film['index'] = filtered_film.index
 
         if not filtered_film.empty:
             for i in range(0,len(filtered_film)):
                 with st.container(horizontal=True, key=f'film_title_{i}'):
-                    if st.button(f'🔍', key=f'film_details_{i}', width='content'):
-                        st.session_state.detail_movie_index = filtered_film['index'].iloc[i]
+                    if st.button(f'📋', key=f'film_details_{i}', width='content'):
+                        st.session_state.detail_movie_index = filtered_film.index[i]
                         show_movie_details()
                     with st.container(width='stretch'):
                         st.write(f'{filtered_film["Title"].iloc[i]}')
@@ -1551,6 +1549,12 @@ def complex_actress(conn):
                 .st-key-film_title_{i} p {{
                     width: 100%;
                     text-align: left;
+                }}
+
+                .st-key-film_details_{i} button {{
+                    background-color: #3F9AAE;
+                    color: white;
+                    border-radius: 6px;
                 }}
                 </style>
                 """
@@ -1590,7 +1594,6 @@ def complex_actress(conn):
             st.session_state.actress_page = 'home'
             st.rerun()
         index = st.session_state.editing_index
-        df = st.session_state.actress_filtered
         actress = df.iloc[index]
         st.space('small')
         st.markdown(f"#### ✏️ Editing: {actress['Name (Alphabet)']}")
@@ -2136,13 +2139,11 @@ def complex_actress(conn):
                     )
 
                     if clicked > -1:
-                        st.session_state.viewing_index = clicked
-                        st.session_state.actress_filtered = filtered_df
+                        index = filtered_df.index[clicked]
+                        st.session_state.viewing_index = index
                         st.session_state.editing_index = None
                         st.session_state.actress_page = 'view'
                         st.session_state.scroll_to_top = True
-                        
-                        # Gunakan callback atau langsung panggil st.rerun()
                         st.rerun()
                             
                 except Exception as e:
@@ -2150,8 +2151,9 @@ def complex_actress(conn):
                     st.stop()
             else:
                 
-                for index in range(0,len(filtered_df)):
-                    review_text = filtered_df['Review'].iloc[index]
+                for i in range(0,len(filtered_df)):
+                    index = filtered_df.index[i]
+                    review_text = filtered_df['Review'].iloc[i]
 
                     if review_text == 'Not Watched':
                         review_icon = '🔴'
@@ -2162,37 +2164,36 @@ def complex_actress(conn):
                     else:
                         review_icon = '⚪'
                         review_color = 'grey'
-                    with st.container(key=f'actress_card_{index}'):
+                    with st.container(key=f'actress_card_{i}'):
                         with st.container(horizontal=True, horizontal_alignment='distribute'):
-                            st.markdown(f'###### {filtered_df["Name (Alphabet)"].iloc[index]} -- {filtered_df["Name (Native)"].iloc[index]}')
-                            if filtered_df['Favourite'].iloc[index] == 1:
+                            st.markdown(f'###### {filtered_df["Name (Alphabet)"].iloc[i]} -- {filtered_df["Name (Native)"].iloc[i]}')
+                            if filtered_df['Favourite'].iloc[i] == 1:
                                 st.badge(f"",icon='⭐', color='yellow',width='content')
-                        st.badge(f"{filtered_df['Review'].iloc[index]}",icon=review_icon, color=review_color)
+                        st.badge(f"{filtered_df['Review'].iloc[i]}",icon=review_icon, color=review_color)
                         with st.container(horizontal=True):
-                            st.image(filtered_df['Picture'].iloc[index], width=120)
+                            st.image(filtered_df['Picture'].iloc[i], width=120)
                             with st.container(horizontal=False, width='content'):
-                                if filtered_df['Birthdate'].iloc[index] == '?':
+                                if filtered_df['Birthdate'].iloc[i] == '?':
                                     st.write('🎂 DoB : ?')
                                 else:
-                                    st.write(f'🎂 DoB : {datetime.strptime(filtered_df["Birthdate"].iloc[index],"%d/%m/%Y").date().strftime("%b %d, %Y")}')
-                                st.write(f'👧 Age : {filtered_df["Age"].iloc[index]}')
-                                st.write(f'🌍 Country : {filtered_df["Nationality"].iloc[index]}')
-                        if st.button('🔍 View Details', key=f"button_{filtered_df['Name (Alphabet)'].iloc[index]}", width='stretch'):
+                                    st.write(f'🎂 DoB : {datetime.strptime(filtered_df["Birthdate"].iloc[i],"%d/%m/%Y").date().strftime("%b %d, %Y")}')
+                                st.write(f'👧 Age : {filtered_df["Age"].iloc[i]}')
+                                st.write(f'🌍 Country : {filtered_df["Nationality"].iloc[i]}')
+                        if st.button('🔍 View Details', key=f"button_{filtered_df['Name (Alphabet)'].iloc[i]}", width='stretch'):
                             st.session_state.viewing_index = index
-                            st.session_state.actress_filtered = filtered_df
                             st.session_state.editing_index = None
                             st.session_state.actress_page = 'view'
                             st.session_state.scroll_to_top = True
                             st.rerun()
-                        actress_card_css = f"""<style>
-                                .st-key-actress_card_{index}"""
-                        actress_card_css+= """{
+                        st.markdown(f"""
+                            <style>
+                                .st-key-actress_card_{i}{{
                                     background-color: #1D546D;
                                     padding: 5px;
                                     border-radius: 5px;
-                                }
-                            </style>"""
-                        st.markdown(actress_card_css, unsafe_allow_html=True)
+                                }}
+                            </style>
+                        """, unsafe_allow_html=True)
                     st.space('small')
                 
                 
