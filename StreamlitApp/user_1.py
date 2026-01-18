@@ -1304,7 +1304,7 @@ def complex_actress(conn):
     if 'scroll_to_top' not in st.session_state:
         st.session_state.scroll_to_top = False
     if 'display_mode' not in st.session_state:
-        st.session_state.display_mode = 'Gallery'
+        st.session_state.display_mode = 'List'
     if 'detail_movie_index' not in st.session_state:
         st.session_state.detail_movie_index = None
     if 'actress_index' not in st.session_state:
@@ -2131,36 +2131,37 @@ def complex_actress(conn):
             st.stop()
 
         if st.session_state.display_mode == "Gallery":
-            try:
-                clicked = clickable_images(
-                    filtered_df['Picture'].dropna().tolist(),
-                    titles=filtered_df["Name (Alphabet)"].fillna("").tolist(),
-                    div_style={
-                        "display": "grid",
-                        "grid-template-columns": "repeat(3, 1fr)",
-                        "gap": "8px",
-                        "width": "100%"
-                    },
-                    img_style={
-                        "width": "100%",        
-                        "aspect-ratio": "1 / 1", 
-                        "object-fit": "cover",
-                        "border-radius": "15%",
-                        "cursor": "pointer"
-                    } 
-                )
+            st.write('Under Development!')
+            # try:
+            #     clicked = clickable_images(
+            #         filtered_df['Picture'].dropna().tolist(),
+            #         titles=filtered_df["Name (Alphabet)"].fillna("").tolist(),
+            #         div_style={
+            #             "display": "grid",
+            #             "grid-template-columns": "repeat(3, 1fr)",
+            #             "gap": "8px",
+            #             "width": "100%"
+            #         },
+            #         img_style={
+            #             "width": "100%",        
+            #             "aspect-ratio": "1 / 1", 
+            #             "object-fit": "cover",
+            #             "border-radius": "15%",
+            #             "cursor": "pointer"
+            #         } 
+            #     )
 
-                if clicked > -1:
-                    index = filtered_df.index[clicked]
-                    st.session_state.viewing_index = index
-                    st.session_state.editing_index = None
-                    st.session_state.actress_index = index
-                    show_actress_details()
-                    st.rerun()
+            #     if clicked > -1:
+            #         index = filtered_df.index[clicked]
+            #         st.session_state.viewing_index = index
+            #         st.session_state.editing_index = None
+            #         st.session_state.actress_index = index
+            #         show_actress_details()
+            #         st.rerun()
                         
-            except Exception as e:
-                st.error(f'Error Generate Image: {e}')
-                st.stop()
+            # except Exception as e:
+            #     st.error(f'Error Generate Image: {e}')
+            #     st.stop()
         else:
             
             for i in range(0,len(filtered_df)):
