@@ -227,15 +227,12 @@ def display_film_grid(df, actress_df):
     if search_name:
         mask = filtered_df['Title'].str.contains(search_name, case=False, na=False)
         filtered_df = filtered_df[mask]
-        # st.session_state.film_page = 1
 
     if playlist_filter != 'All':
         filtered_df = filtered_df[filtered_df['Playlist'] == playlist_filter]  
-        # st.session_state.film_page = 1
 
     if info_filter != 'All':
         filtered_df = filtered_df[filtered_df['Info'] == info_filter]
-        # st.session_state.film_page = 1
 
     total_pages = max(1, (len(filtered_df) + 15 - 1) // 15)  
 
@@ -1410,6 +1407,8 @@ def complex_actress(conn):
         st.session_state.adding_new = False
     if "film_detail" not in st.session_state:
         st.session_state.film_detail = False
+    if "check_clicked" not in st.session_state:
+        st.session_state.check_clicked = False
 
     # Fungsi untuk menghitung usia berdasarkan birthdate
     def calculate_age(birthdate_str):
@@ -1630,7 +1629,6 @@ def complex_actress(conn):
             # Tombol aksi
             if st.button("← Back to View", width='stretch', key=f"back_{index}"):
                 st.session_state.editing_index = None
-
                 st.rerun()
             
             if st.button("Close", width='stretch', key=f"close_{index}"):
@@ -2063,11 +2061,19 @@ def complex_actress(conn):
 
     if st.session_state.film_detail:
         show_movie_details()
+    
+    COUNTRY_FILTER = ['All'] + sorted(
+        df.loc[df['Nationality'] != 'All', 'Nationality']
+        .dropna()
+        .unique()
+        .tolist()
+    )
 
     if not df.empty and 'Picture' in df.columns:
         if st.session_state.get('search_reset', False):
             st.session_state.search_reset = False
             st.session_state.search_bar = ''
+            st.session_state.check_country = 'All'
         st.space('small')    
         st.space('small')    
         
@@ -2079,6 +2085,9 @@ def complex_actress(conn):
             if st.button('Clear'):
                 st.session_state.search_reset = True
                 st.rerun()
+            
+        country = st.selectbox('Country', options=COUNTRY_FILTER, key='check_country')
+
 
         # Filter DataFrame berdasarkan status
         filtered_df = df.copy()
@@ -2098,6 +2107,7 @@ def complex_actress(conn):
             favourite_conditions.append(filtered_df['Favourite'] == 0.0)
             favourite_conditions.append(filtered_df['Favourite'] == 1.0)
 
+
         if review_conditions:
             review_mask = review_conditions[0]
             for cond in review_conditions[1:]:
@@ -2114,6 +2124,9 @@ def complex_actress(conn):
         
         final_mask = review_mask & favourite_mask
         filtered_df = filtered_df[final_mask]
+        if country != 'All':
+            filtered_df = filtered_df[filtered_df['Nationality'] == country] 
+
         if not search_query and not search_query.isspace() and not filtered_df.empty:
             st.write('')
         elif search_query and not search_query.isspace() and not filtered_df.empty:
@@ -2132,36 +2145,41 @@ def complex_actress(conn):
 
         if st.session_state.display_mode == "Gallery":
             st.write('Under Development!')
-            # try:
-            #     clicked = clickable_images(
-            #         filtered_df['Picture'].dropna().tolist(),
-            #         titles=filtered_df["Name (Alphabet)"].fillna("").tolist(),
-            #         div_style={
-            #             "display": "grid",
-            #             "grid-template-columns": "repeat(3, 1fr)",
-            #             "gap": "8px",
-            #             "width": "100%"
-            #         },
-            #         img_style={
-            #             "width": "100%",        
-            #             "aspect-ratio": "1 / 1", 
-            #             "object-fit": "cover",
-            #             "border-radius": "15%",
-            #             "cursor": "pointer"
-            #         } 
-            #     )
+            try:
+                if st.session_state.get('reset_click', False):
+                    st.session_state.click_image = -1
 
-            #     if clicked > -1:
-            #         index = filtered_df.index[clicked]
-            #         st.session_state.viewing_index = index
-            #         st.session_state.editing_index = None
-            #         st.session_state.actress_index = index
-            #         show_actress_details()
-            #         st.rerun()
+                clicked = clickable_images(
+                    filtered_df['Picture'].dropna().tolist(),
+                    titles=filtered_df["Name (Alphabet)"].fillna("").tolist(),
+                    div_style={
+                        "display": "grid",
+                        "grid-template-columns": "repeat(3, 1fr)",
+                        "gap": "8px",
+                        "width": "100%"
+                    },
+                    img_style={
+                        "width": "100%",        
+                        "aspect-ratio": "1 / 1", 
+                        "object-fit": "cover",
+                        "border-radius": "15%",
+                        "cursor": "pointer"
+                    },
+                    key="click_image"
+                )
+
+                if clicked > -1:
+                    index = filtered_df.index[clicked]
+                    st.session_state.viewing_index = index
+                    st.session_state.editing_index = None
+                    st.session_state.actress_index = index
+                    st.session_state.reset_click = True
+                    show_actress_details()
+                    st.rerun()
                         
-            # except Exception as e:
-            #     st.error(f'Error Generate Image: {e}')
-            #     st.stop()
+            except Exception as e:
+                st.error(f'Error Generate Image: {e}')
+                st.stop()
         else:
             
             for i in range(0,len(filtered_df)):
