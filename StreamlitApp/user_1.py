@@ -498,6 +498,8 @@ def complex_film(conn):
         st.session_state.scroll_to_top = False
     if 'scroll_to_here' not in st.session_state:
         st.session_state.scroll_to_here = False
+    if 'delete_film' not in st.session_state:
+        st.session_state.delete_film = False
 
     if st.session_state.scroll_to_top:
         scroll_to_here(0,key='top')  # Scroll to the top of the page
@@ -613,25 +615,6 @@ def complex_film(conn):
 
         edited_actress = ", ".join(selected_actress)
 
-        # if st.checkbox('New Actress', key='new_actress_check'):
-        #     edited_actress = '?'
-        #     edited_actress_input = st.text_input('New Actress Name*', placeholder='Alphabet, Kanji')
-        #     if edited_actress_input:
-        #         try:
-        #             edited_actress_name, edited_actress_native = edited_actress_input.split(', ')
-        #             st.write('Name: ', edited_actress_name)
-        #             st.write('Kanji: ', edited_actress_native)
-        #         except Exception as e:
-        #             st.error(f'Error new actress: {e}')
-            
-        #     edited_nationality = st.selectbox('New Actress Nationality', options=COUNTRY_OPTS)
-        # elif selected_actress:
-        #     edited_actress = ", ".join(selected_actress)
-        #     edited_actress_input = '?'
-        # else:
-        #     edited_actress = '?'
-        #     edited_actress_input = '?'
-
         selected_genre = st.multiselect(
             'Genre', 
             options = GENRE_OPTS, 
@@ -704,42 +687,6 @@ def complex_film(conn):
                 old_filename = str(film['Picture']).split('/')[-1]
                 old_public_id = old_filename.split('.')[0]
 
-                # if ((edited_actress!='?')or(edited_actress_input!='?')):
-                #     if edited_actress_input!='?':
-                #         # Create edited row data
-                #         edited_row = pd.DataFrame([{
-                #             'Review': 'Not Checked',
-                #             'Picture': st.secrets.indicators.PLACEHOLDER_IMG,
-                #             'Name (Alphabet)': edited_actress_name,
-                #             'Name (Native)': edited_actress_native,
-                #             'Birthdate': '?',
-                #             'Age': '?',
-                #             'Nationality': edited_nationality,
-                #             'Height (cm)': '? cm',
-                #             'Job': 'Actress',
-                #             'Favourite': '0',
-
-                #         }])
-                    
-                #         # Add to DataFrame
-                #         edited_name_native = edited_row['Name (Native)'].iloc[0]
-                #         df_actress = st.session_state.actress_df
-
-                #         if edited_name_native in df_actress['Name (Native)'].values:
-                #             st.warning(f"⚠️ Actress '{edited_name_native}' already exist in database with name!")
-                #             st.stop()
-                #         else:
-                #             df_actress = pd.concat([df_actress, edited_row], ignore_index=True)   
-                #             df_actress = df_actress.sort_values('Name (Alphabet)', key=lambda col: col.str.lower(), ascending=True, ignore_index=True)
-                #             # Update ke Google Sheets
-                #             if update_google_sheets(df_actress,conn,'actress'):
-                #                 st.success("✅ edited actress added successfully to Google Sheets!")
-                #                 st.session_state.actress_df = values_handling(df_actress,'actress')  # Update session state
-                #             else:
-                #                 st.error("❌ Failed to add edited actress to Google Sheets")
-                #                 st.stop()
-                #         edited_actress = edited_actress_name
-
                 # kalau cuma ganti foto
                 if new_pic and (edited_title == film['Title']):
                     if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
@@ -805,8 +752,20 @@ def complex_film(conn):
                 st.session_state.editing_film_index = None
                 st.rerun()
 
-        if st.button("🗑️ Delete Film", width='stretch', type="secondary", key=f"delete_{index}"):
-            delete_film(index)
+        if st.session_state.delete_film == False:
+            if st.button("🗑️ Delete Film", width='stretch', type="secondary", key=f"delete_{index}"):
+                st.session_state.delete_film = True
+                st.rerun()
+        else:
+            st.warning('Are you sure want to delete this film?')
+            with st.container(horizontal=True):
+                if st.button('Yes', width='stretch'):
+                    st.session_state.delete_film = False
+                    delete_film(index)
+                if st.button('No', width='stretch'):
+                    st.session_state.delete_film = False
+                    st.rerun()
+                
     
     def delete_film(index):
         film = df.loc[index]
@@ -1306,6 +1265,8 @@ def complex_actress(conn):
         st.session_state.detail_movie_index = None
     if 'actress_index' not in st.session_state:
         st.session_state.actress_index = None
+    if 'delete_actress' not in st.session_state:
+        st.session_state.delete_actress = False
 
     # Fungsi untuk refresh data dari Google Sheets
     def refresh_data(conn):
@@ -1587,28 +1548,6 @@ def complex_actress(conn):
             st.rerun()
 
     def show_edit_mode(index):
-        def delete_actress(index):
-            # Hapus data dari DataFrame
-            actress = df.loc[index]
-            pic_filename = str(actress['Picture']).split('/')[-1]
-            pic_id = pic_filename.split('.')[0]
-
-            if 'placeholder' not in pic_id:
-                delete_cloudinary_image(pic_id)
-
-            df.drop(index, inplace=True)
-            df.reset_index(drop=True, inplace=True)
-            
-            # Update ke Google Sheets
-            if update_google_sheets(df,conn,'actress'):
-                st.success("✅ Actress deleted successfully from Google Sheets!")
-                st.session_state.actress_df = values_handling(df,'actress')  # Update session state
-            else:
-                st.error("❌ Failed to delete actress from Google Sheets")
-            
-            st.session_state.editing_index = None
-            st.session_state.viewing_index = None
-            st.rerun()
         index = st.session_state.editing_index
         actress = df.iloc[index]
         st.space('small')
@@ -1635,10 +1574,19 @@ def complex_actress(conn):
                 st.session_state.viewing_index = None
                 st.session_state.editing_index = None
                 st.rerun()
-                
-            if st.button("🗑️ Delete Actress", width='stretch', type="secondary", key=f"delete_{index}"):
-                delete_actress(index)
-
+            if st.session_state.delete_actress == False:
+                if st.button("🗑️ Delete Actress", width='stretch', type="secondary", key=f"delete_{index}"):
+                    st.session_state.delete_actress = True
+                    st.rerun()
+            else:
+                st.warning('Are you sure want to delete this actress?')
+                with st.container(horizontal=True):
+                    if st.button('Yes', width='stretch'):
+                        st.session_state.delete_actress = False 
+                        delete_actress(index) 
+                    if st.button('No', width='stretch'):
+                        st.session_state.delete_actress = False
+                        st.rerun()
 
             # Image uploader
             new_pic = st.file_uploader("Change Image", type=['png', 'jpg', 'jpeg', 'webp'], key=f"uploader_{index}")
@@ -1854,6 +1802,29 @@ def complex_actress(conn):
             
             st.session_state.editing_index = None
             st.rerun()
+    
+    def delete_actress(index):
+        # Hapus data dari DataFrame
+        actress = df.loc[index]
+        pic_filename = str(actress['Picture']).split('/')[-1]
+        pic_id = pic_filename.split('.')[0]
+
+        if 'placeholder' not in pic_id:
+            delete_cloudinary_image(pic_id)
+
+        df.drop(index, inplace=True)
+        df.reset_index(drop=True, inplace=True)
+        
+        # Update ke Google Sheets
+        if update_google_sheets(df,conn,'actress'):
+            st.success("✅ Actress deleted successfully from Google Sheets!")
+            st.session_state.actress_df = values_handling(df,'actress')  # Update session state
+        else:
+            st.error("❌ Failed to delete actress from Google Sheets")
+        
+        st.session_state.editing_index = None
+        st.session_state.viewing_index = None
+        st.rerun()
     
     @st.dialog("➕ Add New Actress", width="large")
     def add_new_actress():
@@ -2221,7 +2192,7 @@ def complex_actress(conn):
                         <style>
                             .st-key-actress_card_{i}{{
                                 background-color: #1D546D;
-                                padding: 5px;
+                                padding:10px 10px 1px 10px;
                                 border-radius: 5px;
                             }}
                         </style>
