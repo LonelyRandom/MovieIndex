@@ -188,6 +188,7 @@ def reset_page():
     """Reset halaman ke 1"""
     st.session_state.film_page = 1
 
+
 # --- FUNGSI ALTERNATIF: Grid Layout tanpa Pagination ---
 def display_film_grid(df, actress_df):
     """
@@ -214,8 +215,13 @@ def display_film_grid(df, actress_df):
     filtered_df = df.copy()
     filtered_actress_df = actress_df.copy()
     if st.session_state.get('search_reset', False):
-            st.session_state.search_reset = False
-            st.session_state.search_bar = ''
+        st.session_state.search_reset = False
+        st.session_state.search_bar = ''
+        st.session_state.search_text = ''
+    if st.session_state.get('set_search', False):
+        st.session_state.set_search = False
+        st.session_state.search_bar = st.session_state.search_text
+        st.session_state.search_text = ''
     with st.container(horizontal=True, vertical_alignment='bottom'):
         search_name = st.text_input("🔍 Search (Title):", placeholder="Enter Movie or Series...", key='search_bar', on_change=reset_page)
         if st.button('Clear', on_click=reset_page):
@@ -225,7 +231,8 @@ def display_film_grid(df, actress_df):
     info_filter = st.selectbox("Info:", options=INFO_OPTS_MIX, on_change=reset_page)
 
     if search_name:
-        mask = filtered_df['Title'].str.contains(search_name, case=False, na=False)
+        mask = (filtered_df['Title'].str.contains(search_name, case=False, na=False) |
+                filtered_df['Actress Name'].str.contains(search_name, case=False, na=False))
         filtered_df = filtered_df[mask]
 
     if playlist_filter != 'All':
@@ -364,11 +371,17 @@ def display_film_grid(df, actress_df):
                         is_center = 'left'
                     with st.container(horizontal=True, horizontal_alignment=is_center):
                         for index in matching_actresses.index:
-                            st.image(
-                                matching_actresses['Picture'][index],
-                                width=80,
-                                caption=matching_actresses['Name (Alphabet)'][index]
-                            )
+                            with st.container(width=80):
+                                st.image(
+                                    matching_actresses['Picture'][index]
+                                )
+                                if st.button(matching_actresses['Name (Alphabet)'][index], width='stretch', type='tertiary', key=f"{matching_actresses['Name (Alphabet)'][index]}_{real_index}"):
+                                    st.session_state.set_search = True
+                                    st.session_state.search_text = matching_actresses['Name (Alphabet)'][index] 
+                                    st.session_state.scroll_to_here = True
+                                    st.rerun()    
+                            # st.                               
+
                     st.markdown(f'ℹ️ Information')
                     with st.container(horizontal=True):
                         st.badge(f"{status_text}",icon=status_icon, color=status_color)
@@ -428,6 +441,10 @@ def display_film_grid(df, actress_df):
 
 
 def complex_home(conn):
+
+    if 'log_out_btn' not in st.session_state:
+        st.session_state.log_out_btn = False
+
     st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Home Page</h1>", unsafe_allow_html=True)
     df_actress = init_dataframe_actress(conn)
     df_film = init_dataframe_film(conn)
@@ -458,9 +475,19 @@ def complex_home(conn):
             if st.button('Go To Film →'):
                 return 'film'
     
-    if st.button('🔐 Logout', width='stretch', type='primary'):
-        st.session_state.clear()
-        return 'login'
+    if st.session_state.log_out_btn == False:
+        if st.button('🔐 Logout', width='stretch', type='primary'):
+            st.session_state.log_out_btn = True
+            st.rerun()
+    else:
+        st.warning('Are you sure want to logout?')
+        with st.container(horizontal=True):
+            if st.button('Yes', width='stretch'):
+                st.session_state.log_out_btn = False
+                return 'login'
+            if st.button('No', width='stretch'):
+                st.session_state.log_out_btn = False
+                st.rerun()
     
     # CSS custom untuk container tertentu
     st.markdown("""
@@ -1009,9 +1036,19 @@ def complex_film(conn):
         st.markdown('---')
         if st.button('➕ Add New Film', width='stretch'):
             add_new_film()
-        if st.button('🔐 Logout', width='stretch'):
-            st.session_state.clear()
-            return 'login'
+        if st.session_state.log_out_btn == False:
+            if st.button('🔐 Logout', width='stretch'):
+                st.session_state.log_out_btn = True
+                st.rerun()
+        else:
+            st.warning('Are you sure want to logout?')
+            with st.container(horizontal=True):
+                if st.button('Yes', width='stretch'):
+                    st.session_state.log_out_btn = False
+                    return 'login'
+                if st.button('No', width='stretch'):
+                    st.session_state.log_out_btn = False
+                    st.rerun()
         if st.button('⬆️ Back to top', width='stretch'):
             st.session_state.scroll_to_top = True
             st.rerun()
@@ -2021,9 +2058,19 @@ def complex_actress(conn):
         #     refresh_data()
         #     st.rerun()
         
-        if st.button('🔐 Logout', width='stretch'):
-            st.session_state.clear()
-            return 'login'
+        if st.session_state.log_out_btn == False:
+            if st.button('🔐 Logout', width='stretch'):
+                st.session_state.log_out_btn = True
+                st.rerun()
+        else:
+            st.warning('Are you sure want to logout?')
+            with st.container(horizontal=True):
+                if st.button('Yes', width='stretch'):
+                    st.session_state.log_out_btn = False
+                    return 'login'
+                if st.button('No', width='stretch'):
+                    st.session_state.log_out_btn = False
+                    st.rerun()
     if st.session_state.adding_new:
         add_new_actress()
 

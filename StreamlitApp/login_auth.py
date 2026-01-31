@@ -5,7 +5,7 @@ import streamlit as st
 
 def log_in(conn):    
     st.set_page_config(
-        page_title="Actress Note - Login",
+        page_title="Movies Note - Login",
         page_icon="🔐",
         layout="wide"
     )
