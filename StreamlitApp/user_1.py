@@ -117,7 +117,7 @@ def format_job_with_groups(jobs, groups):
 
 def load_data_actress(conn):
     try:
-        df = conn.read(worksheet="NList", usecols=list(range(10)))
+        df = conn.read(worksheet="NList", usecols=list(range(12)))
         df = values_handling(df,'actress')
         # df = initial_load(df,'actress')
         return df
@@ -126,7 +126,7 @@ def load_data_actress(conn):
 
 def load_data_film(conn):
     try:
-        df = conn.read(worksheet="NFilm", usecols=list(range(12)))
+        df = conn.read(worksheet="NFilm", usecols=list(range(13)))
         return df
     except Exception as e:
         return pd.DataFrame()
@@ -620,10 +620,22 @@ def complex_film(conn):
         with st.container(horizontal_alignment='center'): 
             st.markdown(f"### ✏️ Editing: {film['Title']}")
             st.image(film['Picture'], width=250)
-            new_pic = st.file_uploader('Change Image', type=['png', 'jpg', 'jpeg', 'webp'], key=f'film_picture_{index}')
-            if new_pic is not None:
-                st.image(new_pic, width=250)
-    
+            if film['Upload Type'] == 'Local':
+                type_idx = 0
+            else:
+                type_idx = 1
+            pic_up = st.radio('Picture Upload Type', ['Local', 'Internet'], index=type_idx, horizontal=True )
+
+            if pic_up == 'Local':
+                new_pic = st.file_uploader('Change Image', type=['png', 'jpg', 'jpeg', 'webp'], key=f'film_picture_{index}')
+            else:
+                new_pic = st.text_input('Image Link', placeholder='Enter your poster link...',key=f'film_picture_link_{index}')
+            
+            if new_pic is not None and new_pic != '':
+                try:
+                    st.image(new_pic, width=250)
+                except Exception as e:
+                    st.error(f'Error: {e}')
         
         st.subheader("Basic Information")
         # edited_name = st.text_input('Actress', placeholder='Enter actress name... (e.g. Miyashita Rena)', value=film['Actress Name'], key=f'film_name_{index}')
@@ -715,19 +727,24 @@ def complex_film(conn):
                 old_public_id = old_filename.split('.')[0]
 
                 # kalau cuma ganti foto
-                if new_pic and (edited_title == film['Title']):
+                if (new_pic and new_pic != '') and (edited_title == film['Title']):
                     if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
                         try:
-                            delete_cloudinary_image(old_public_id)
+                            if pic_up == 'Local':
+                                delete_cloudinary_image(old_public_id)
                         except Exception as e:
                             st.warning(f"Could not delete old image: {e}")
                             st.stop()
-                    final_picture_url = upload_to_database(new_pic, clean_code)
-                    if not final_picture_url:
-                        st.error("Failed to upload new image")
-                        st.stop()
+                    if pic_up == 'Local':
+                        final_picture_url = upload_to_database(new_pic, clean_code)
+                        if not final_picture_url:
+                            st.error("Failed to upload new image")
+                            st.stop()
+                    else:
+                        final_picture_url = new_pic
+
                 # kalau ganti foto dan code
-                elif new_pic and (film['Title'] != edited_title):
+                elif (new_pic and new_pic != '')     and (film['Title'] != edited_title):
                     if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
                         try:
                             delete_cloudinary_image(old_public_id)
@@ -838,9 +855,15 @@ def complex_film(conn):
         
         reset_film = st.session_state.new_film_reset
 
-        new_picture = st.file_uploader('Image', type=['png', 'jpg', 'jpeg', 'webp'], key=f'new_film_picture_{reset_film}')
+        pic_up = st.radio('Picture Upload Type',['Local', 'Internet'], horizontal=True)
+
+        if pic_up == 'Local':
+            new_picture = st.file_uploader('Image', type=['png', 'jpg', 'jpeg', 'webp'], key=f'new_film_picture_{reset_film}')
         
-        if not new_picture is None:
+        else:
+            new_picture = st.text_input('Image Link', placeholder='Enter your poster link...')
+
+        if not new_picture is None and not new_picture == '':
             with st.container(horizontal_alignment='center'):
                 st.image(new_picture, width=200)
         else:
@@ -986,11 +1009,14 @@ def complex_film(conn):
                                 st.stop()
                         new_actress = new_actress_name
 
-                    if new_picture:
+                    if new_picture and new_picture != '':
                         join_name = new_title
                         clean_name = re.sub(r'[^\w]', '', join_name)
                         clean_name = "N" + clean_name
-                        picture_url = upload_to_database(new_picture, clean_name)
+                        if pic_up == 'Local':
+                            picture_url = upload_to_database(new_picture, clean_name)
+                        else:
+                            picture_url = new_picture
                     else:
                         picture_url = st.secrets.indicators.PLACEHOLDER_IMG_POSTER
                     
@@ -1006,7 +1032,8 @@ def complex_film(conn):
                         'Rating': new_rating,
                         'Playlist': new_playlist,
                         'Actress Name': new_actress,
-                        'Note' : new_note
+                        'Note' : new_note,
+                        'Upload Type' : pic_up
                     }])
 
                     df = st.session_state.film_df
@@ -1460,16 +1487,32 @@ def complex_actress(conn):
             )
             
             # Tombol Edit dan Close
+            no_link_btn_mdl = False
+            no_link_btn_asian = False
             button_container = st.container(key='view_edit_close', horizontal=True)
             with button_container:
-                if st.button("✏️ Edit", width='stretch', key=f"edit_btn_{index}"):
-                    st.session_state.editing_index = index
-                    st.rerun()
+                with st.container():
+                    if st.button("✏️ Edit", width='stretch', key=f"edit_btn_{index}"):
+                        st.session_state.editing_index = index
+                        st.rerun()
+                    if actress['AsianWiki'] != '--':
+                        st.link_button("AsianWiki",actress['AsianWiki'], width='stretch')
+                    else:
+                        no_link_btn_asian = st.button('AsianWiki', width='stretch')
+                with st.container():
+                    if st.button("❌ Close", width='stretch', key=f"close_{index}"):
+                        st.session_state.viewing_index = None
+                        st.session_state.editing_index = None
+                        st.rerun()
+                    if actress['MDL'] != '--':
+                        st.link_button("MDL", actress['MDL'], width='stretch')
+                    else:
+                        no_link_btn_mdl = st.button('MDL', width='stretch')
 
-                if st.button("❌ Close", width='stretch', key=f"close_{index}"):
-                    st.session_state.viewing_index = None
-                    st.session_state.editing_index = None
-                    st.rerun()
+            if no_link_btn_asian:
+                st.warning('No link found! (AsianWiki)')
+            elif no_link_btn_mdl:
+                st.warning('No link found! (MDL)')
 
         with col2:
             # Info dasar dalam metrics
@@ -2215,10 +2258,21 @@ def complex_actress(conn):
                     review_color = 'grey'
                 with st.container(key=f'actress_card_{i}'):
                     with st.container(horizontal=True, horizontal_alignment='distribute'):
-                        st.markdown(f'###### {filtered_df["Name (Alphabet)"].iloc[i]} -- {filtered_df["Name (Native)"].iloc[i]}')
-                        if filtered_df['Favourite'].iloc[i] == 1:
-                            st.badge(f"",icon='⭐', color='yellow',width='content')
-                    st.badge(f"{filtered_df['Review'].iloc[i]}",icon=review_icon, color=review_color)
+                        with st.container():
+                            st.markdown(f"""
+                            <div style="line-height: 1; margin-bottom: 10px;">
+                                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">
+                                    {filtered_df["Name (Alphabet)"].iloc[i]}
+                                </div>
+                                <div style="font-size: 0.8rem; color: #d7dae0; margin-top: 0;">
+                                    {filtered_df["Name (Native)"].iloc[i]}
+                                </div>
+                            </div>
+                            """, unsafe_allow_html=True)
+                        with st.container(horizontal_alignment='right', horizontal=True ):
+                            st.badge(f"{filtered_df['Review'].iloc[i]}",icon=review_icon, color=review_color)
+                            if filtered_df['Favourite'].iloc[i] == 1:
+                                st.badge(f"",icon='⭐', color='yellow',width='content')
                     with st.container(horizontal=True):
                         st.image(filtered_df['Picture'].iloc[i], width=120)
                         with st.container(horizontal=False, width='content'):
