@@ -531,9 +531,15 @@ def complex_film(conn):
     if st.session_state.scroll_to_top:
         scroll_to_here(0,key='top')  # Scroll to the top of the page
         st.session_state.scroll_to_top = False
+    if 'film_df' not in st.session_state:
+        st.session_state.film_df = init_dataframe_film(conn)
+    
+    df = st.session_state.film_df
 
-    df = init_dataframe_film(conn)
-    actress_df = init_dataframe_actress(conn)
+    if 'actress_df' not in st.session_state:
+        st.session_state.actress_df = init_dataframe_actress(conn)
+
+    actress_df = st.session_state.actress_df
 
     PLAYLIST_OPTS = ['All'] + sorted(
         df.loc[df['Playlist'] != 'All', 'Playlist']
@@ -835,146 +841,104 @@ def complex_film(conn):
 
     @st.dialog("➕ Add New Film", width='small')
     def add_new_film():
-        if st.session_state.get('film_reset', False):
-            st.session_state.film_reset = False
-            st.session_state.new_status = STATUS_OPTS[0]
-            st.session_state.new_info_s = INFO_OPTS_S[0]
-            st.session_state.new_info_m = INFO_OPTS_M[0]
-            st.session_state.new_title = ''
-            st.session_state.new_actresses = ''
-            st.session_state.new_type = TYPE_OPTS[0]
-            st.session_state.new_current_eps = 1
-            st.session_state.new_episode = 1
-            st.session_state.new_genre = ''
-            st.session_state.new_rating = 3
-            st.session_state.new_playlist = ''
-            st.session_state.new_new_playlist = ''
+        tab1, tab2 =  st.tabs(tabs=['Add Information', 'Actress Role'])
 
-        if 'new_film_reset' not in st.session_state:
-            st.session_state.new_film_reset = 0
-        
-        reset_film = st.session_state.new_film_reset
+        with tab1:
+            if st.session_state.get('film_reset', False):
+                st.session_state.film_reset = False
+                st.session_state.new_status = STATUS_OPTS[0]
+                st.session_state.new_info_s = INFO_OPTS_S[0]
+                st.session_state.new_info_m = INFO_OPTS_M[0]
+                st.session_state.new_title = ''
+                st.session_state.new_actresses = ''
+                st.session_state.new_type = TYPE_OPTS[0]
+                st.session_state.new_current_eps = 1
+                st.session_state.new_episode = 1
+                st.session_state.new_genre = ''
+                st.session_state.new_rating = 3
+                st.session_state.new_playlist = ''
+                st.session_state.new_new_playlist = ''
 
-        pic_up = st.radio('Picture Upload Type',['Local', 'Internet'], horizontal=True)
+            if 'new_film_reset' not in st.session_state:
+                st.session_state.new_film_reset = 0
+            
+            reset_film = st.session_state.new_film_reset
 
-        if pic_up == 'Local':
-            new_picture = st.file_uploader('Image', type=['png', 'jpg', 'jpeg', 'webp'], key=f'new_film_picture_{reset_film}')
-        
-        else:
-            new_picture = st.text_input('Image Link', placeholder='Enter your poster link...')
+            pic_up = st.radio('Picture Upload Type',['Local', 'Internet'], horizontal=True)
 
-        if not new_picture is None and not new_picture == '':
-            with st.container(horizontal_alignment='center'):
-                st.image(new_picture, width=200)
-        else:
-            new_picture = st.secrets.indicators.PLACEHOLDER_IMG_POSTER
-
-        new_status = st.selectbox('Status', key='new_status', options=STATUS_OPTS)
-        new_title = st.text_input('Title*', key='new_title', placeholder='Enter new film title...') 
-
-        selected_actress = st.multiselect('Actress*', key='new_actresses', options=ACTRESS_OPTS)
-
-        new_act_error = False
-        if st.checkbox('New Actress', key='new_actress_check'):
-            new_actress = '?'
-            st.markdown('---')
-            new_actress_input = st.text_input('New Actress Name*', placeholder='Alphabet, Kanji')
-            if new_actress_input:
-                new_actress_name, new_actress_native = new_actress_input.split(', ')
-                st.write('Name: ', new_actress_name)
-                st.write('Kanji: ', new_actress_native)
-            new_nationality = st.selectbox('Nationality', options=COUNTRY_OPTS)
-
-            new_job = st.multiselect(
-                "Job*", 
-                options=JOB_OPTS,
-                key=f"new_job"
-            )
-            group_inputs = {}
-            idol_error = False
-            group_error = False
-
-            if "Idol" in new_job:
-                group_inputs["Idol"] = st.text_input(
-                    "Idol Group",
-                    key=f"new_idol_group"
-                )
-                if st.checkbox('No Info', key='check_idol_group'):
-                    idol_error = False
-                    group_inputs['Idol'] = '?'
-                elif group_inputs['Idol'] == '':
-                    idol_error = True
-                else:
-                    idol_error = False
-
-            if "Ex-Member" in new_job:
-                group_inputs["Ex-Member"] = st.text_input(
-                    "Former Group",
-                    key=f"new_ex_member_group"
-                )
-                if st.checkbox('No Info', key='check_ex_member_group'):
-                    group_error = False
-                    group_inputs['Ex-Member'] = '?'
-                if group_inputs['Ex-Member'] == '':
-                    group_error = True
-                else:
-                    group_error = False 
-
-            if idol_error or group_error or new_actress_input == '' or new_job == []:
-                new_act_error = True
+            if pic_up == 'Local':
+                new_picture = st.file_uploader('Image', type=['png', 'jpg', 'jpeg', 'webp'], key=f'new_film_picture_{reset_film}')
+            
             else:
-                new_jobs = format_job_with_groups(new_job, group_inputs)
-                new_act_error = False
-            st.markdown('---')
-        elif selected_actress:
-            new_actress = ", ".join(selected_actress)
-            new_actress_input = '?'
-        else:
-            new_actress = '?'
-            new_actress_input = '?'
+                new_picture = st.text_input('Image Link', placeholder='Enter your poster link...')
 
-        selected_genre = st.multiselect('Genre*', key='new_genre', options=GENRE_OPTS)
-        new_genre = ", ".join(selected_genre)
+            if not new_picture is None and not new_picture == '':
+                with st.container(horizontal_alignment='center'):
+                    st.image(new_picture, width=200)
+            else:
+                new_picture = st.secrets.indicators.PLACEHOLDER_IMG_POSTER
 
-        new_type = st.selectbox('Type', key='new_type', options=TYPE_OPTS)
+            new_status = st.selectbox('Status', key='new_status', options=STATUS_OPTS)
+            new_title = st.text_input('Title*', key='new_title', placeholder='Enter new film title...') 
 
-        if new_type == 'Series':
-            new_episode = st.number_input('Episode', key='new_episode', min_value=1)
-            new_info = st.selectbox('Info', key='new_info_s', options=INFO_OPTS_S)
-        else:
-            new_episode = '?'
-            new_current_eps = '?'
-            new_info = st.selectbox('Info',key='new_info_m', options=INFO_OPTS_M)
-        
+            selected_actress = st.multiselect('Actress*', key='new_actresses', options=ACTRESS_OPTS)
 
-        if new_info == 'On Going':  
-            new_current_eps = st.number_input('Current Episode', min_value=1, max_value=new_episode)
-            new_rating = '?'
-        elif new_info == 'Complete':
-            new_current_eps = new_episode
-            new_rating = st_star_rating('Rating', maxValue=5, defaultValue=3, key="new_rating", emoticons=True)
-            new_rating = int(new_rating)
-        else:
-            new_current_eps = '?'
-            new_rating = '?'
+            new_act_error = False
+            if st.checkbox('New Actress', key='new_actress_check'):
+                st.markdown('---')
+                new_actress_input = st.text_input('New Actress Name*', placeholder='Format : Alphabet, Kanji')
+                if new_actress_input:
+                    try:
+                        new_actress_name, new_actress_native = new_actress_input.split(', ')
+                        st.write('Name: ', new_actress_name)
+                        st.write('Kanji: ', new_actress_native)
+                    except Exception as e:
+                        st.error(f'Error : {e}')
+                new_nationality = st.selectbox('Nationality', options=COUNTRY_OPTS)
 
-        new_playlist = st.selectbox('Playlist', key='new_playlist', options=PLAYLIST_OPTS)
+                new_job = st.multiselect(
+                    "Job*", 
+                    options=JOB_OPTS,
+                    key=f"new_job"
+                )
+                group_inputs = {}
+                idol_error = False
+                group_error = False
 
-        if st.checkbox('New Playlist', key='add_new_playlist'):
-            new_new_playlist = st.text_input('New Playlist', placeholder='Enter new playlist...', key='add_film_new_playlist')
-            if new_new_playlist != '' or new_new_playlist != None:
-                new_playlist = new_new_playlist
-        
-        new_note = st.text_area('Note', placeholder='How do you think about the film/series...')
+                if "Idol" in new_job:
+                    group_inputs["Idol"] = st.text_input(
+                        "Idol Group*",
+                        key=f"new_idol_group"
+                    )
+                    if st.checkbox('No Info', key='check_idol_group'):
+                        idol_error = False
+                        group_inputs['Idol'] = '?'
+                    elif group_inputs['Idol'] == '':
+                        idol_error = True
+                    else:
+                        idol_error = False
 
-        if new_note == '':
-            new_note = '--'
+                if "Ex-Member" in new_job:
+                    group_inputs["Ex-Member"] = st.text_input(
+                        "Former Group*",
+                        key=f"new_ex_member_group"
+                    )
+                    if st.checkbox('No Info', key='check_ex_member_group'):
+                        group_error = False
+                        group_inputs['Ex-Member'] = '?'
+                    if group_inputs['Ex-Member'] == '':
+                        group_error = True
+                    else:
+                        group_error = False 
 
-
-        with st.container(key='film_new_button', horizontal=True):
-            if st.button('💾 Add Film', width='stretch'):
-                if new_title and new_genre and ((new_actress!='?')or(new_actress_input!='?')) and not new_act_error:
-                    if new_actress_input!='?':
+                if idol_error or group_error or new_actress_input == '' or new_job == []:
+                    new_act_error = True
+                else:
+                    new_jobs = format_job_with_groups(new_job, group_inputs)
+                    new_act_error = False
+                
+                if st.button('Add Actress', width='stretch'):
+                    if new_actress_input and not new_act_error:
                         # Create new row data
                         new_row = pd.DataFrame([{
                             'Review': 'Not Watched',
@@ -1007,55 +971,128 @@ def complex_film(conn):
                             else:
                                 st.error("❌ Failed to add new actress to Google Sheets")
                                 st.stop()
-                        new_actress = new_actress_name
+                    else:
+                        st.warning('Fill mandatory fields (*)')
+                st.markdown('---')
+            elif selected_actress:
+                new_actress = ", ".join(selected_actress)
+                new_actress_input = '?'
+            else:
+                new_actress = '?'
+                new_actress_input = '?'
 
-                    if new_picture and new_picture != '':
-                        join_name = new_title
-                        clean_name = re.sub(r'[^\w]', '', join_name)
-                        clean_name = "N" + clean_name
-                        if pic_up == 'Local':
-                            picture_url = upload_to_database(new_picture, clean_name)
+            selected_genre = st.multiselect('Genre*', key='new_genre', options=GENRE_OPTS)
+            new_genre = ", ".join(selected_genre)
+
+            new_type = st.selectbox('Type', key='new_type', options=TYPE_OPTS)
+
+            if new_type == 'Series':
+                new_episode = st.number_input('Episode', key='new_episode', min_value=1)
+                new_info = st.selectbox('Info', key='new_info_s', options=INFO_OPTS_S)
+            else:
+                new_episode = '?'
+                new_current_eps = '?'
+                new_info = st.selectbox('Info',key='new_info_m', options=INFO_OPTS_M)
+            
+
+            if new_info == 'On Going':  
+                new_current_eps = st.number_input('Current Episode', min_value=1, max_value=new_episode)
+                new_rating = '?'
+            elif new_info == 'Complete':
+                new_current_eps = new_episode
+                new_rating = st_star_rating('Rating', maxValue=5, defaultValue=3, key="new_rating", emoticons=True)
+                new_rating = int(new_rating)
+            else:
+                new_current_eps = '?'
+                new_rating = '?'
+
+            new_playlist = st.selectbox('Playlist', key='new_playlist', options=PLAYLIST_OPTS)
+
+            if st.checkbox('New Playlist', key='add_new_playlist'):
+                new_new_playlist = st.text_input('New Playlist', placeholder='Enter new playlist...', key='add_film_new_playlist')
+                if new_new_playlist != '' or new_new_playlist != None:
+                    new_playlist = new_new_playlist
+            
+            new_note = st.text_area('Note', placeholder='How do you think about the film/series...')
+
+            if new_note == '':
+                new_note = '--'
+        with tab2:
+            if selected_actress and new_title != '' and new_genre != '':
+                filtered_actress = actress_df[actress_df['Name (Alphabet)'].isin(selected_actress)]
+                new_roles = []
+                actress_role_name_check = True
+                for i in range(0,len(filtered_actress)):
+                    with st.container():
+                        with st.container(horizontal=True):
+                            st.image(filtered_actress['Picture'].iloc[i], width=110)
+                            with st.container():
+                                st.write(filtered_actress['Name (Alphabet)'].iloc[i])
+                                actress_role_name = st.text_input('Role Name*', key=f'actress_role_name_{i}')
+                                if actress_role_name == '':
+                                    actress_role_name_check = False
+                                else:
+                                    actress_role_name_check = True
+                        actress_role_type = st.selectbox('Role Type*', options=['Main Lead', 'Second Lead', 'Support', 'Cameo'], key=f'actress_role_type_{i}')
+                        st.markdown('---')
+                    
+                    new_role = f'{filtered_actress["Name (Alphabet)"].iloc[i]}, {actress_role_name}, {actress_role_type}'
+                    new_roles.append(new_role)
+                
+                new_roles = '; '.join(new_roles)
+
+                with st.container(key='film_new_button', horizontal=True):
+                    if st.button('💾 Add Film', width='stretch'):
+                        if new_title and new_genre and new_actress and actress_role_name_check:
+                            if new_picture and new_picture != '':
+                                join_name = new_title
+                                clean_name = re.sub(r'[^\w]', '', join_name)
+                                clean_name = "N" + clean_name
+                                if pic_up == 'Local':
+                                    picture_url = upload_to_database(new_picture, clean_name)
+                                else:
+                                    picture_url = new_picture
+                            else:
+                                picture_url = st.secrets.indicators.PLACEHOLDER_IMG_POSTER
+                            
+                            new_row = pd.DataFrame([{
+                                'Status': new_status,
+                                'Info': new_info,
+                                'Picture': picture_url,
+                                'Title': new_title,
+                                'Type': new_type,
+                                'Current Episode': new_current_eps,
+                                'Episode': str(new_episode),
+                                'Genre': new_genre,
+                                'Rating': new_rating,
+                                'Playlist': new_playlist,
+                                'Actress Name': new_actress,
+                                'Note' : new_note,
+                                'Upload Type' : pic_up
+                            }])
+
+                            df = st.session_state.film_df
+                            new_film_title = new_row['Title'].iloc[0]
+
+                            if new_film_title in df['Title'].values:
+                                st.warning(f'⚠️ Title {new_film_title} already exist in database')
+                                st.stop()
+                            else:
+                                df = pd.concat([df,new_row], ignore_index=True)
+                                if update_google_sheets(df,conn,'film'):
+                                    st.session_state.film_df = values_handling(df,'film')
+                            
+                            st.rerun()
                         else:
-                            picture_url = new_picture
-                    else:
-                        picture_url = st.secrets.indicators.PLACEHOLDER_IMG_POSTER
-                    
-                    new_row = pd.DataFrame([{
-                        'Status': new_status,
-                        'Info': new_info,
-                        'Picture': picture_url,
-                        'Title': new_title,
-                        'Type': new_type,
-                        'Current Episode': new_current_eps,
-                        'Episode': str(new_episode),
-                        'Genre': new_genre,
-                        'Rating': new_rating,
-                        'Playlist': new_playlist,
-                        'Actress Name': new_actress,
-                        'Note' : new_note,
-                        'Upload Type' : pic_up
-                    }])
-
-                    df = st.session_state.film_df
-                    new_film_title = new_row['Title'].iloc[0]
-
-                    if new_film_title in df['Title'].values:
-                        st.warning(f'⚠️ Title {new_film_title} already exist in database')
-                        st.stop()
-                    else:
-                        df = pd.concat([df,new_row], ignore_index=True)
-                        if update_google_sheets(df,conn,'film'):
-                            st.session_state.film_df = values_handling(df,'film')
-                    
-                    st.rerun()
-                else:
-                    st.error('Fill mandatory fields first! (*)')
-                    st.stop()
-            if st.button('Close', type='primary', width='stretch'):
-                st.rerun()
+                            st.error('Fill actress role name first! (*)')
+                            st.stop()
+                    if st.button('Close', type='primary', width='stretch'):
+                        st.rerun()
+            elif new_title == '' or new_genre == '':
+                st.warning('Fill mandatory field!')
+            elif not selected_actress:
+                st.info('No Actress Selected!')
             
-            
-
     with st.sidebar:
         if st.button('⬅️ Back', width='stretch'):
             return 'home'
