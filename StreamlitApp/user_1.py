@@ -309,94 +309,17 @@ def display_film_grid(df, actress_df):
             if i < len(rows_to_display):
                 film = rows_to_display.iloc[i]
                 real_index = rows_to_display.index[i]
-            
+
                 st.image(
                     film['Picture'],
-                    caption=film['Title'],
                     width='stretch'
                 )
 
-                with st.expander('📋 View Details', expanded=False):
-                    st.markdown(f"**🎬 {film['Type']}**")
-                    
-                    if film['Type'] == 'Series':
-                        st.markdown (f"🕑 {film['Current Episode']}/{film['Episode']}")
-                    st.markdown (f"📁 {film['Genre']}")
-                    if film['Rating'] == '?' or film['Rating'] == 0:
-                        st.markdown ("🤩 --")
-                    else:
-                        st.markdown (f"🤩 {'⭐' * int(film['Rating'])}")
-                    
-                    info_text = film['Info']
-                    status_text = film['Status']
-
-                    if info_text == 'Complete':
-                        info_icon = '🔵'
-                        info_color = 'blue'
-                    elif info_text == 'Want to Watch':
-                        info_icon = '🟢'
-                        info_color = 'green'
-                    elif info_text == 'On Going':
-                        info_icon = '🟡'
-                        info_color = 'yellow'
-                    elif info_text == 'Drop':
-                        info_icon = '🔴'
-                        info_color = 'red'
-                    elif info_text == 'Dissapointing':
-                        info_icon = '🟣'
-                        info_color = 'violet'
-                    else:
-                        info_icon = '⚪'
-                        info_color = 'grey'
-
-                    if status_text == 'Not Watched':
-                        status_icon = '🔴'
-                        status_color = 'red'
-                    elif status_text == 'Watched':
-                        status_icon = '🟢'
-                        status_color = 'green'
-                    elif status_text == 'Recommended':
-                        status_icon = '🟣'
-                        status_color = 'violet'
-                    else:
-                        status_icon = '⚪'
-                        status_color = 'grey'
-
-                    st.markdown (f"👩‍🦰 Actress")
-                    actress_list = film['Actress Name'].split(', ')
-                    matching_actresses = filtered_actress_df[filtered_actress_df['Name (Alphabet)'].isin(actress_list)]
-                    if len(matching_actresses)>2:
-                        is_center = 'center'
-                    else:
-                        is_center = 'left'
-                    with st.container(horizontal=True, horizontal_alignment=is_center):
-                        for index in matching_actresses.index:
-                            with st.container(width=80):
-                                st.image(
-                                    matching_actresses['Picture'][index]
-                                )
-                                if st.button(matching_actresses['Name (Alphabet)'][index], width='stretch', type='tertiary', key=f"{matching_actresses['Name (Alphabet)'][index]}_{real_index}"):
-                                    st.session_state.set_search = True
-                                    st.session_state.search_text = matching_actresses['Name (Alphabet)'][index] 
-                                    st.session_state.scroll_to_here = True
-                                    st.rerun()    
-                            # st.                               
-
-                    st.markdown(f'ℹ️ Information')
-                    with st.container(horizontal=True):
-                        st.badge(f"{status_text}",icon=status_icon, color=status_color)
-                        st.badge(f"{info_text}",icon=info_icon, color=info_color)
-                    
-                    st.markdown(f'📋 Notes')
-                    st.warning(film['Note'])
-                    with st.container(horizontal=True):
-                        if st.button('✏️ Edit', key=f'film_edit_{real_index}', width='stretch'):
-                            st.session_state.viewing_film_index = real_index
-                            st.session_state.editing_film_index = real_index
-                            st.rerun()
-                    
-                st.space('small') 
-        st.markdown('---')
+                if st.button(film['Title'], key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
+                    st.session_state.viewing_film_index = real_index
+                    st.rerun()
+                st.markdown('---')
+                            
         if total_pages <= 6:
             with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
                 for i in range(1, total_pages + 1):
@@ -575,43 +498,110 @@ def complex_film(conn):
             st.markdown(f"<h2 style='text-align: center;'>{film['Title']}</h2>", unsafe_allow_html=True)
             st.image(film['Picture'], width=200)
         
+        filtered_actress_df = actress_df.copy()
+
+        actress_list = film['Actress Name'].split(', ')
+        matching_actresses = filtered_actress_df[filtered_actress_df['Name (Alphabet)'].isin(actress_list)]
+        if len(matching_actresses)>2:
+            is_center = 'center'
+        else:
+            is_center = 'left'
+        
         st.markdown('### Actress')
-        st.write(film['Actress Name'])
+        with st.container(horizontal=True, horizontal_alignment=is_center):
+            for idx in matching_actresses.index:
+                with st.container(width=90):
+                    st.image(
+                        matching_actresses['Picture'][idx]
+                    )
+                    if st.button(matching_actresses['Name (Alphabet)'][idx], width='stretch', type='tertiary', key=f"{matching_actresses['Name (Alphabet)'][idx]}_{index}"):
+                        st.session_state.set_search = True
+                        st.session_state.search_text = matching_actresses['Name (Alphabet)'][idx] 
+                        st.session_state.scroll_to_here = True
+                        st.session_state.viewing_film_index = None
+                        st.rerun()    
+            
+        info_text = film['Info']
+        status_text = film['Status']
+        type_text = film['Type']
+
+        if info_text == 'Complete':
+            info_icon = '🔵'
+            info_color = 'blue'
+        elif info_text == 'Want to Watch':
+            info_icon = '🟢'
+            info_color = 'green'
+        elif info_text == 'On Going':
+            info_icon = '🟡'
+            info_color = 'yellow'
+        elif info_text == 'Drop':
+            info_icon = '🔴'
+            info_color = 'red'
+        elif info_text == 'Dissapointing':
+            info_icon = '🟣'
+            info_color = 'violet'
+        else:
+            info_icon = '⚪'
+            info_color = 'grey'
+
+        if status_text == 'Not Watched':
+            status_icon = '🔴'
+            status_color = 'red'
+        elif status_text == 'Watched':
+            status_icon = '🟢'
+            status_color = 'green'
+        elif status_text == 'Recommended':
+            status_icon = '🟣'
+            status_color = 'violet'
+        else:
+            status_icon = '⚪'
+            status_color = 'grey'
+
+        if type_text == 'Movie':
+            type_icon = '🎬'
+        else:
+            type_icon = '🎞️'
+
         with st.container(horizontal=True):
             with st.container():
                 st.markdown('### Status')
-                st.write(film['Status'])
-
-                st.markdown('### Info')
-                st.write(film['Info'])
+                st.badge(film['Status'], icon=status_icon, color=status_color)
 
                 st.markdown('### Type')
-                st.write(film['Type'])
-        
-            with st.container():
-                st.markdown('### Episode')
-                st.write(f"{str(film['Current Episode'])}/{str(film['Episode'])}")
+                st.badge(film['Type'], icon=type_icon, color='orange')
 
                 st.markdown('### Genre')
                 st.write(film['Genre'])
+        
+            with st.container():
+                st.markdown('### Info')
+                st.badge(film['Info'], icon=info_icon, color=info_color)
+
+                st.markdown('### Episode')
+                if type_text == 'Series':
+                    st.write(f"{str(film['Current Episode'])}/{str(film['Episode'])}")
+                else:
+                    st.write('--')
 
                 st.markdown('### Playlist')
-                st.warning(film['Playlist']) 
+                st.info(film['Playlist']) 
+
         if film['Rating'] == '?':
             st_star_rating(label='Rating', maxValue = 5, defaultValue = 0, key = "rating", read_only = True)
         else:
             st_star_rating(label='Rating', maxValue = 5, defaultValue = int(film['Rating']), key = "rating", read_only = True)
+        
+        st.markdown('## Notes')
+        st.warning(film['Note'])
 
         with st.container(key='view_film_edit_container_button', horizontal=True):
             if st.button('✏️ Edit', width='stretch'):
                 st.session_state.editing_film_index = index
                 st.rerun()
             if st.button('❌ Close', width='stretch'):
-                st.session_state.viewing_film_index = None
                 st.session_state.editing_film_index = None
+                st.session_state.viewing_film_index = None
                 st.rerun()
-            if st.button("🗑️ Delete Actress", width='stretch', type="secondary", key=f"delete_{index}"):
-                delete_film(index)
 
     def show_edit_film(index):
         film = df.iloc[index]
@@ -873,8 +863,7 @@ def complex_film(conn):
                 st.session_state.viewing_film_index = None
                 st.rerun()
                 
-            if st.button('❌ Close', width='stretch'):
-                st.session_state.viewing_film_index = None
+            if st.button('❌ Cancel', width='stretch'):
                 st.session_state.editing_film_index = None
                 st.rerun()
 
