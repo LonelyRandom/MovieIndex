@@ -188,6 +188,10 @@ def display_film_grid(df, actress_df):
     """
     Menampilkan semua card sekaligus dalam grid
     """
+
+    if 'img_size' not in st.session_state:
+        st.session_state.img_size = 'Device 1'
+
     PLAYLIST_OPTS = ['All'] + sorted(
         df.loc[df['Playlist'] != 'All', 'Playlist']
         .dropna()
@@ -223,7 +227,12 @@ def display_film_grid(df, actress_df):
             st.rerun()
     playlist_filter = st.selectbox("Playlist:", options=PLAYLIST_OPTS, on_change=reset_page)
     info_filter = st.selectbox("Info:", options=INFO_OPTS_MIX, on_change=reset_page)
-    st.session_state.img_size = st.selectbox("Device",options=['Device 1', 'Device 2'], on_change=reset_page)
+    if st.session_state.img_size == 'Device 1':
+        device_index = 0
+    else:
+        device_index = 1
+
+    st.session_state.img_size = st.selectbox("Device",options=['Device 1', 'Device 2'], on_change=reset_page, index=device_index)
 
     if st.session_state.img_size == 'Device 1':
         device_width = 115
