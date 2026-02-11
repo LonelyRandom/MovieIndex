@@ -35,13 +35,6 @@ COUNTRY_OPTS = [
 ]
 
 # MOVIE OPTS
-STATUS_OPTS = [
-    "Not Watched",
-    "Watched",
-    "Goat",
-    "Dissapointing"
-]
-
 INFO_OPTS_S = [
     "Want to Watch",
     "On Going",
@@ -176,7 +169,8 @@ def init_dataframe_film(conn):
         if df.empty:
             df = pd.DataFrame(columns=[
                 'Status', 'Info', 'Picture', 'Title', 'Current Episode',
-                'Episode', 'Genre', 'Rating', 'Playlist'
+                'Episode', 'Genre', 'Rating', 'Playlist', 'Actress Name', 
+                'Note', 'Upload Type', 'Synopsis'
             ])
         
         st.session_state.film_df = df
@@ -299,26 +293,58 @@ def display_film_grid(df, actress_df):
         
         page = st.session_state.film_page
         
-        start_idx = (page - 1) * 15 
-        end_idx = min(start_idx + 15, len(filtered_df)) 
+        start_idx = (page - 1) * 30 
+        end_idx = min(start_idx + 30, len(filtered_df)) 
         st.markdown("---")
         st.caption(f"Showing {start_idx+1}-{end_idx} from {len(filtered_df)} actress")
-        
         rows_to_display = filtered_df.iloc[start_idx:end_idx] 
-        for i in range(0, len(rows_to_display)): # len = 8 // i = [0,8]
-            if i < len(rows_to_display):
-                film = rows_to_display.iloc[i]
-                real_index = rows_to_display.index[i]
 
-                st.image(
-                    film['Picture'],
-                    width='stretch'
-                )
+        st.markdown(
+            """
+            <style>
+            button[data-testid="stBaseButton-tertiary"] p {
+                font-size: 13px !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        with st.container(horizontal=True):
+            for i in range(0, len(rows_to_display)): # len = 8 // i = [0,8]
+                if i < len(rows_to_display):
+                    film = rows_to_display.iloc[i]
+                    real_index = rows_to_display.index[i]
 
-                if st.button(film['Title'], key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
-                    st.session_state.viewing_film_index = real_index
-                    st.rerun()
-                st.markdown('---')
+                    
+                    with st.container(width=116):
+                        # Tambahkan wrapper dengan fixed height
+                        st.markdown(f"""
+                            <div style="
+                                height: 170px;  /* Atur tinggi tetap */
+                                width: 100%;
+                                overflow: hidden;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                margin-bottom: 10px;
+                                border-radius: 5px;
+                            ">
+                                <img src="{film['Picture']}" 
+                                    style="
+                                        width: 100%;
+                                        height: 100%;
+                                        object-fit: cover;
+                                        object-position: center;
+                                    ">
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                        title = film['Title']
+                        if len(title) > 30:
+                            title = title[:30] + "..."
+                        if st.button(title, key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
+                            st.session_state.viewing_film_index = real_index
+                            st.rerun()
                             
         if total_pages <= 6:
             with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
@@ -394,7 +420,7 @@ def complex_home(conn):
                     st.metric('Watched', len(df_film[df_film['Status'] == 'Watched']))
                 with st.container(key='Film Info 2', horizontal=False):
                     st.metric('Not Watched', len(df_film[df_film['Status'] == 'Not Watched']))
-                    st.metric('Goat', len(df_film[df_film['Status'] == 'Goat']))
+                    st.metric('Recommended', len(df_film[df_film['Status'] == 'Recommended']))
             if st.button('Go To Film →'):
                 return 'film'
     
@@ -498,6 +524,8 @@ def complex_film(conn):
             st.markdown(f"<h2 style='text-align: center;'>{film['Title']}</h2>", unsafe_allow_html=True)
             st.image(film['Picture'], width=200)
         
+        with st.expander('Synopsis'):
+            st.write(film['Synopsis'])
         filtered_actress_df = actress_df.copy()
 
         actress_list = film['Actress Name'].split(', ')
@@ -508,19 +536,53 @@ def complex_film(conn):
             is_center = 'left'
         
         st.markdown('### Actress')
+        st.markdown(
+            """
+            <style>
+            button[data-testid="stBaseButton-tertiary"] p {
+                font-size: 14px !important;
+                color: #d6cfc7 !important;
+            }
+            """,
+            unsafe_allow_html=True
+        )
         with st.container(horizontal=True, horizontal_alignment=is_center):
             for idx in matching_actresses.index:
-                with st.container(width=90):
-                    st.image(
-                        matching_actresses['Picture'][idx]
-                    )
-                    if st.button(matching_actresses['Name (Alphabet)'][idx], width='stretch', type='tertiary', key=f"{matching_actresses['Name (Alphabet)'][idx]}_{index}"):
-                        st.session_state.set_search = True
-                        st.session_state.search_text = matching_actresses['Name (Alphabet)'][idx] 
-                        st.session_state.scroll_to_here = True
+                actress_name = matching_actresses['Name (Alphabet)'][idx]
+                container_key = f"{actress_name}_{index}"
+                with st.container(width=80, key=container_key):
+                    # Display image as circle using HTML
+                    st.markdown(f"""
+                        <div style="
+                            width: 70px;
+                            height: 70px;
+                            border-radius: 50%;
+                            overflow: hidden;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            margin: 0 auto 8px auto;
+                            background: white;
+                        ">
+                            <img src="{matching_actresses['Picture'][idx]}" 
+                                style="
+                                    width: 100%;
+                                    height: 100%;
+                                    object-fit: cover;
+                                ">
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Button
+                    if st.button(actress_name, width='stretch', type='tertiary', 
+                                key=f"{actress_name}_{idx}", on_click=reset_page):
                         st.session_state.viewing_film_index = None
-                        st.rerun()    
-            
+                        st.session_state.editing_film_index = None
+                        st.session_state.search_text = actress_name
+                        st.session_state.set_search = True
+                        st.session_state.scroll_to_top = True
+                        st.rerun()  
+        
         info_text = film['Info']
         status_text = film['Status']
         type_text = film['Type']
@@ -609,7 +671,6 @@ def complex_film(conn):
         playlist_index = PLAYLIST_OPTS.index(film['Playlist']) if film['Playlist'] in PLAYLIST_OPTS else 0
         info_s_index = INFO_OPTS_S.index(film['Info']) if film['Info'] in INFO_OPTS_S else 0
         info_m_index = INFO_OPTS_M.index(film['Info']) if film['Info'] in INFO_OPTS_M else 0
-        status_index = STATUS_OPTS.index(film['Status']) if film['Status'] in STATUS_OPTS else 0
         type_index = TYPE_OPTS.index(film['Type']) if film['Type'] in TYPE_OPTS else 0
 
         # tab_edit_film, tab_edit_actress_info = st.tabs(['Film Info', 'Actress Info'])
@@ -645,7 +706,8 @@ def complex_film(conn):
         # edited_name = st.text_input('Actress', placeholder='Enter actress name... (e.g. Miyashita Rena)', value=film['Actress Name'], key=f'film_name_{index}')
 
         edited_title = st.text_area('Title', placeholder='Enter film title...', value=film['Title'], key=f'film_title_{index}')
-        
+
+        edited_synopsis = st.text_area('Synopsis', placeholder='Enter film synopsis...', value=film['Synopsis'], key=f'film_synopsis_{index}')
         selected_actress = st.multiselect(
             'Actress', 
             options = ACTRESS_OPTS, 
@@ -850,6 +912,7 @@ def complex_film(conn):
                 df.at[index, 'Playlist'] = edited_playlist
                 df.at[index, 'Note'] = edited_note
                 df.at[index, 'Upload Type'] = pic_up
+                df.at[index, 'Synopsis'] = edited_synopsis
                 # df.at[index, 'Roles Detail'] = new_roles
                 
                 # Update ke Google Sheets
@@ -1070,6 +1133,8 @@ def complex_film(conn):
             new_status = 'Watched'
         elif new_info == 'Want to Watch':
             new_status = 'Not Watched'
+            new_current_eps = '?'
+            new_rating = '?'
         else:
             new_current_eps = '?'
             new_rating = '?'
@@ -1170,6 +1235,9 @@ def complex_film(conn):
             return 'home'
         
         st.markdown('---')
+        show_recommend = st.toggle('Recommended', on_change=reset_page)
+        st.markdown('---')
+
         if st.button('➕ Add New Film', width='stretch'):
             add_new_film()
         if st.session_state.log_out_btn == False:
@@ -1186,7 +1254,7 @@ def complex_film(conn):
                     st.session_state.log_out_btn = False
                     st.rerun()
         if st.button('⬆️ Back to top', width='stretch'):
-            st.session_state.scroll_to_top = True
+            st.session_state.scroll_to_here = True
             st.rerun()
     
     # Main
@@ -1196,89 +1264,18 @@ def complex_film(conn):
     if st.session_state.viewing_film_index is not None:
         show_film_details()
 
-    display_film_grid(df, actress_df)
+    filtered_df = df.copy()
+
+    if show_recommend:
+        filtered_df = filtered_df[filtered_df['Status'] == 'Recommended']
+    
+    display_film_grid(filtered_df, actress_df)
     st.markdown('---')
     if st.button('⬆️ Back to top', width='stretch'):
         st.session_state.scroll_to_top = True
         st.rerun()
     st.markdown("""
     <style>
-    /* Container untuk beberapa badge */
-    .badge-stack {
-        position: absolute;
-        top: 20px;
-        right: 10px;
-        display: flex;
-        flex-direction: column;
-        justify-content: flex-end;
-        gap: 6px;
-        z-index: 10;
-    }
-
-    /* Status badge (yang sudah ada) */
-    .status-badge {
-        padding: 4px 9px;
-        border-radius: 20px;
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: white;
-        text-align: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-
-    /* info badge */
-    .info-badge {
-        padding: 4px 9px;
-        border-radius: 20px;
-        font-size: 10px;
-        font-weight: 600;
-        text-transform: uppercase;
-        color: white;
-        text-align: center;
-        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-    }
-
-    /* Warna info */
-    .info-want-to-watch { background-color: #2ecc71; }
-    .info-on-going { background-color: #f1c40f; }
-    .info-drop { background-color: #e74c3c; }
-    .info-complete { background-color: #3498db; }
-
-    /* Warna berdasarkan status */
-    .status-watched {
-        background-color: #2ecc71; /* hijau */
-    }
-    .status-dissapointing {
-        background-color: #95a5a6; /* abu */
-    }
-    .status-goat {
-        background-color: #9b59b6; /* violet */
-    }
-    .status-slow-release {
-        background-color: #e67e22; /* orange */
-    }
-    .status-not-watched {
-        background-color: #e74c3c; /* merah */
-    }
-
-    /* Supaya badge nempel di card */
-    .cat-card {
-        position: relative;
-    }
-                
-    /* Hover effect untuk card */
-    .actress-card:hover {
-        transform: translateY(-5px) !important;
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
-        border-color: #004cff !important;
-    }
-    
-    /* Smooth transition */
-    .actress-card {
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
-    }
-    
     /* Responsive design */
     @media (max-width: 768px) {
         .actress-card {
@@ -2382,8 +2379,26 @@ def complex_actress(conn):
                             st.badge(f"{filtered_df['Review'].iloc[i]}",icon=review_icon, color=review_color)
                             if filtered_df['Favourite'].iloc[i] == 1:
                                 st.badge(f"",icon='⭐', color='yellow',width='content')
-                    with st.container(horizontal=True):
-                        st.image(filtered_df['Picture'].iloc[i], width=120)
+                    with st.container(horizontal=True,width='content'):
+                        st.markdown(f"""
+                            <div style="
+                                width: 120px;
+                                height: 120px;
+                                border-radius: 50%;
+                                overflow: hidden;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                background: white;
+                            ">
+                                <img src="{filtered_df['Picture'][i]}" 
+                                    style="
+                                        width: 100%;
+                                        height: 100%;
+                                        object-fit: cover;
+                                    ">
+                            </div>
+                        """, unsafe_allow_html=True)
                         with st.container(horizontal=False, width='content'):
                             if filtered_df['Birthdate'].iloc[i] == '?':
                                 st.write('🎂 DoB : ?')
