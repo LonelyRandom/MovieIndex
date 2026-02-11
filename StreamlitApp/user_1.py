@@ -223,6 +223,7 @@ def display_film_grid(df, actress_df):
             st.rerun()
     playlist_filter = st.selectbox("Playlist:", options=PLAYLIST_OPTS, on_change=reset_page)
     info_filter = st.selectbox("Info:", options=INFO_OPTS_MIX, on_change=reset_page)
+    img_size = st.number_input('Img_width',min_value=100)
 
     if search_name:
         mask = (filtered_df['Title'].str.contains(search_name, case=False, na=False) |
@@ -316,7 +317,7 @@ def display_film_grid(df, actress_df):
                     real_index = rows_to_display.index[i]
 
                     
-                    with st.container(width=116):
+                    with st.container(width=img_size):
                         # Tambahkan wrapper dengan fixed height
                         st.markdown(f"""
                             <div style="
@@ -974,7 +975,6 @@ def complex_film(conn):
 
         if st.session_state.get('film_reset', False):
             st.session_state.film_reset = False
-            st.session_state.new_status = STATUS_OPTS[0]
             st.session_state.new_info_s = INFO_OPTS_S[0]
             st.session_state.new_info_m = INFO_OPTS_M[0]
             st.session_state.new_title = ''
@@ -2024,7 +2024,6 @@ def complex_actress(conn):
             st.session_state.new_native = ''
             st.session_state.new_nationality = COUNTRY_OPTS[0]
             st.session_state.new_birthdate = date.today()
-            st.session_state.new_status = STATUS_OPTS[0]
             st.session_state.new_height = 130
             st.session_state.new_job = ''
             st.session_state.new_idol_group = ''
