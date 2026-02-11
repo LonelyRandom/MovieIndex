@@ -24,7 +24,6 @@ def log_in(conn):
         st.markdown("<h1 style='text-align: center; margin-bottom: 15px;'>Login</h1>", unsafe_allow_html=True)
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
-        
         login_button = st.button("Login", use_container_width=True)
         
         # Inisialisasi status error di session state

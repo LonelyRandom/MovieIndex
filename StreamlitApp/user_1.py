@@ -1234,7 +1234,9 @@ def complex_film(conn):
                         'Nationality': new_nationality,
                         'Height (cm)': '? cm',
                         'Job': new_jobs,
-                        'Favourite': 0
+                        'Favourite': 0,
+                        'AsianWiki' : '--',
+                        'MDL' : '--'
                     }])
 
 
@@ -1812,6 +1814,37 @@ def complex_actress(conn):
                     st.image(new_pic, width=200)
 
             st.subheader("Basic Information")
+
+            if actress['AsianWiki'] == '--':
+                asianwiki = ''
+            else:
+                asianwiki = actress['AsianWiki']
+
+            if actress['MDL'] == '--':
+                mdl = ''
+            else:
+                mdl = actress['MDL']
+
+            edited_asianwiki = st.text_input(
+                "AsianWiki", 
+                value=asianwiki,
+                placeholder='Enter AsianWiki...',
+                key=f"review_{index}"
+            )
+
+            if edited_asianwiki == '':
+                edited_asianwiki = '--'
+
+            edited_mdl = st.text_input(
+                "MDL", 
+                value=mdl,
+                placeholder='Enter MDL...',
+                key=f"review_{index}"
+            )
+
+            if edited_mdl == '':
+                edited_mdl = '--'
+
             edited_review = st.selectbox(
                 "Review", 
                 options=REVIEW_OPTS,
@@ -2003,6 +2036,8 @@ def complex_actress(conn):
             df.at[index, 'Height (cm)'] = edited_height
             df.at[index, 'Job'] = edited_jobs
             df.at[index, 'Favourite'] = edited_favourite
+            df.at[index, 'AsianWiki'] = edited_asianwiki
+            df.at[index, 'MDL'] = edited_mdl
             
             # Update ke Google Sheets
             if update_google_sheets(df,conn,'actress'):
@@ -2067,7 +2102,9 @@ def complex_actress(conn):
         if not new_picture is None:
             with st.container(horizontal_alignment='center'):
                 st.image(new_picture, width=200)    
-
+        
+        new_asianwiki = st.text_input("AsianWiki", placeholder='Enter AsianWiki....', key='new_asianwiki')
+        new_mdl = st.text_input("MDL", placeholder='Enter MDL....', key='new_mdl')
         new_review = st.selectbox("Review", options=REVIEW_OPTS, key='new_review')
         new_name = st.text_input("Name (Alphabet)*", placeholder="Enter name in alphabet", key='new_name')
         new_native = st.text_input("Name (Native)*", placeholder="Enter name in native", key='new_native')
@@ -2169,7 +2206,9 @@ def complex_actress(conn):
                     'Nationality': new_nationality,
                     'Height (cm)': new_height,
                     'Job': new_jobs,
-                    'Favourite': new_favourite
+                    'Favourite': new_favourite,
+                    'AsianWiki' : new_asianwiki,
+                    'MDL' : new_mdl
                 }])
 
                 # Add to DataFrame
