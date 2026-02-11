@@ -223,7 +223,12 @@ def display_film_grid(df, actress_df):
             st.rerun()
     playlist_filter = st.selectbox("Playlist:", options=PLAYLIST_OPTS, on_change=reset_page)
     info_filter = st.selectbox("Info:", options=INFO_OPTS_MIX, on_change=reset_page)
-    img_size = st.number_input('Img_width',min_value=100)
+    st.session_state.img_size = st.selectbox("Device",options=['Device 1', 'Device 2'], on_change=reset_page)
+
+    if st.session_state.img_size == 'Device 1':
+        device_width = 115
+    else:
+        device_width = 106
 
     if search_name:
         mask = (filtered_df['Title'].str.contains(search_name, case=False, na=False) |
@@ -317,7 +322,7 @@ def display_film_grid(df, actress_df):
                     real_index = rows_to_display.index[i]
 
                     
-                    with st.container(width=img_size):
+                    with st.container(width=device_width):
                         # Tambahkan wrapper dengan fixed height
                         st.markdown(f"""
                             <div style="
