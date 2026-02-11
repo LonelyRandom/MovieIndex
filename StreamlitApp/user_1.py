@@ -250,7 +250,7 @@ def display_film_grid(df, actress_df):
     if info_filter != 'All':
         filtered_df = filtered_df[filtered_df['Info'] == info_filter]
 
-    total_pages = max(1, (len(filtered_df) + 15 - 1) // 15)  
+    total_pages = max(1, (len(filtered_df) + 27 - 1) // 27)  
 
     def set_page(p):
         st.session_state.film_page = p
@@ -308,8 +308,8 @@ def display_film_grid(df, actress_df):
         
         page = st.session_state.film_page
         
-        start_idx = (page - 1) * 30 
-        end_idx = min(start_idx + 30, len(filtered_df)) 
+        start_idx = (page - 1) * 27 
+        end_idx = min(start_idx + 27, len(filtered_df)) 
         st.markdown("---")
         st.caption(f"Showing {start_idx+1}-{end_idx} from {len(filtered_df)} actress")
         rows_to_display = filtered_df.iloc[start_idx:end_idx] 
@@ -324,7 +324,7 @@ def display_film_grid(df, actress_df):
             """,
             unsafe_allow_html=True
         )
-        with st.container(horizontal=True):
+        with st.container(horizontal=True, horizontal_alignment='center'):
             for i in range(0, len(rows_to_display)): # len = 8 // i = [0,8]
                 if i < len(rows_to_display):
                     film = rows_to_display.iloc[i]
@@ -361,6 +361,7 @@ def display_film_grid(df, actress_df):
                             st.session_state.viewing_film_index = real_index
                             st.rerun()
                             
+        st.markdown('---')
         if total_pages <= 6:
             with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
                 for i in range(1, total_pages + 1):
@@ -1021,106 +1022,14 @@ def complex_film(conn):
             new_picture = st.secrets.indicators.PLACEHOLDER_IMG_POSTER
 
         new_title = st.text_area('Title*', key='new_title', placeholder='Enter new film title...') 
+        new_synopsis = st.text_area('Synopsis', key='new_synopsis', placeholder='Enter new film synopsis...') 
 
         selected_actress = st.multiselect('Actress*', key='new_actresses', options=ACTRESS_OPTS)
 
-        new_act_error = False
-        if st.checkbox('New Actress', key='new_actress_check'):
-            st.markdown('---')
-            new_actress_input = st.text_input('New Actress Name*', placeholder='Format : Alphabet, Kanji')
-            if new_actress_input:
-                try:
-                    new_actress_name, new_actress_native = new_actress_input.split(', ')
-                    st.write('Name: ', new_actress_name)
-                    st.write('Kanji: ', new_actress_native)
-                except Exception as e:
-                    st.error(f'Error : {e}')
-            new_nationality = st.selectbox('Nationality', options=COUNTRY_OPTS)
-
-            new_job = st.multiselect(
-                "Job*", 
-                options=JOB_OPTS,
-                key=f"new_job"
-            )
-            group_inputs = {}
-            idol_error = False
-            group_error = False
-
-            if "Idol" in new_job:
-                group_inputs["Idol"] = st.text_input(
-                    "Idol Group*",
-                    key=f"new_idol_group"
-                )
-                if st.checkbox('No Info', key='check_idol_group'):
-                    idol_error = False
-                    group_inputs['Idol'] = '?'
-                elif group_inputs['Idol'] == '':
-                    idol_error = True
-                else:
-                    idol_error = False
-
-            if "Ex-Member" in new_job:
-                group_inputs["Ex-Member"] = st.text_input(
-                    "Former Group*",
-                    key=f"new_ex_member_group"
-                )
-                if st.checkbox('No Info', key='check_ex_member_group'):
-                    group_error = False
-                    group_inputs['Ex-Member'] = '?'
-                if group_inputs['Ex-Member'] == '':
-                    group_error = True
-                else:
-                    group_error = False 
-
-            if idol_error or group_error or new_actress_input == '' or new_job == []:
-                new_act_error = True
-            else:
-                new_jobs = format_job_with_groups(new_job, group_inputs)
-                new_act_error = False
-            
-            if st.button('Add Actress', width='stretch'):
-                if new_actress_input and not new_act_error:
-                    # Create new row data
-                    new_row = pd.DataFrame([{
-                        'Review': 'Not Watched',
-                        'Picture': st.secrets.indicators.PLACEHOLDER_IMG,
-                        'Name (Alphabet)': new_actress_name,
-                        'Name (Native)': new_actress_native,
-                        'Birthdate': '?',
-                        'Age': '?',
-                        'Nationality': new_nationality,
-                        'Height (cm)': '? cm',
-                        'Job': new_jobs,
-                        'Favourite': 0
-                    }])
-
-
-                    # Add to DataFrame
-                    new_name_native = new_row['Name (Native)'].iloc[0]
-                    df_actress = st.session_state.actress_df
-
-                    if new_name_native in df_actress['Name (Native)'].values:
-                        st.warning(f"⚠️ Actress '{new_name_native}' already exist in database!")
-                        st.stop()
-                    else:
-                        df_actress = pd.concat([df_actress, new_row], ignore_index=True)   
-                        df_actress = df_actress.sort_values('Name (Alphabet)', key=lambda col: col.str.lower(), ascending=True, ignore_index=True)
-                        # Update ke Google Sheets
-                        if update_google_sheets(df_actress,conn,'actress'):
-                            st.success("✅ New actress added successfully to Google Sheets!")
-                            st.session_state.actress_df = values_handling(df_actress,'actress')  # Update session state
-                        else:
-                            st.error("❌ Failed to add new actress to Google Sheets")
-                            st.stop()
-                else:
-                    st.warning('Fill mandatory fields (*)')
-            st.markdown('---')
-        elif selected_actress:
+        if selected_actress:
             new_actress = ", ".join(selected_actress)
-            new_actress_input = '?'
         else:
             new_actress = '?'
-            new_actress_input = '?'
 
         selected_genre = st.multiselect('Genre*', key='new_genre', options=GENRE_OPTS)
         new_genre = ", ".join(selected_genre)
@@ -1190,55 +1099,59 @@ def complex_film(conn):
         #             new_roles.append(new_role)
                 
         #         new_roles = '; '.join(new_roles)
-
-            with st.container(key='film_new_button', horizontal=True):
-                if st.button('💾 Add Film', width='stretch'):
-                    if new_title and new_genre and new_actress:
-                        if new_picture and new_picture != '':
-                            join_name = new_title
-                            clean_name = re.sub(r'[^\w]', '', join_name)
-                            clean_name = "N" + clean_name
-                            if pic_up == 'Local':
-                                picture_url = upload_to_database(new_picture, clean_name)
-                            else:
-                                picture_url = new_picture
+        errors = None
+        with st.container(key='film_new_button', horizontal=True):
+            if st.button('💾 Add Film', width='stretch'):
+                if new_title and new_genre and new_actress:
+                    if new_picture and new_picture != '':
+                        join_name = new_title
+                        clean_name = re.sub(r'[^\w]', '', join_name)
+                        clean_name = "N" + clean_name
+                        if pic_up == 'Local':
+                            picture_url = upload_to_database(new_picture, clean_name)
                         else:
-                            picture_url = st.secrets.indicators.PLACEHOLDER_IMG_POSTER
-                        
-                        new_row = pd.DataFrame([{
-                            'Status': new_status,
-                            'Info': new_info,
-                            'Picture': picture_url,
-                            'Title': new_title,
-                            'Type': new_type,
-                            'Current Episode': new_current_eps,
-                            'Episode': str(new_episode),
-                            'Genre': new_genre,
-                            'Rating': new_rating,
-                            'Playlist': new_playlist,
-                            'Actress Name': new_actress,
-                            'Note' : new_note,
-                            'Upload Type' : pic_up
-                            # 'Roles Detail' : new_roles
-                        }])
-
-                        df = st.session_state.film_df
-                        new_film_title = new_row['Title'].iloc[0]
-
-                        if new_film_title in df['Title'].values:
-                            st.warning(f'⚠️ Title {new_film_title} already exist in database')
-                            st.stop()
-                        else:
-                            df = pd.concat([df,new_row], ignore_index=True)
-                            if update_google_sheets(df,conn,'film'):
-                                st.session_state.film_df = values_handling(df,'film')
-                        
-                        st.rerun()
+                            picture_url = new_picture
                     else:
-                        st.error('Fill actress role name first! (*)')
+                        picture_url = st.secrets.indicators.PLACEHOLDER_IMG_POSTER
+                    
+                    new_row = pd.DataFrame([{
+                        'Status': new_status,
+                        'Info': new_info,
+                        'Picture': picture_url,
+                        'Title': new_title,
+                        'Type': new_type,
+                        'Current Episode': new_current_eps,
+                        'Episode': str(new_episode),
+                        'Genre': new_genre,
+                        'Rating': new_rating,
+                        'Playlist': new_playlist,
+                        'Actress Name': new_actress,
+                        'Note' : new_note,
+                        'Upload Type' : pic_up,
+                        'Synopsis' : new_synopsis
+                        # 'Roles Detail' : new_roles
+                    }])
+
+                    df = st.session_state.film_df
+                    new_film_title = new_row['Title'].iloc[0]
+
+                    if new_film_title in df['Title'].values:
+                        st.warning(f'⚠️ Title {new_film_title} already exist in database')
                         st.stop()
-                if st.button('Close', type='primary', width='stretch'):
+                    else:
+                        df = pd.concat([df,new_row], ignore_index=True)
+                        if update_google_sheets(df,conn,'film'):
+                            st.session_state.film_df = values_handling(df,'film')
+                    
                     st.rerun()
+                else:
+                    errors = 'Fill actress role name first! (*)'
+            if st.button('Close', type='primary', width='stretch'):
+                st.rerun()
+            
+        if errors:
+            st.error(errors)
+            st.stop()
             # elif new_title == '' or new_genre == '':
             #     st.warning('Fill mandatory field!')
             # elif not selected_actress:
@@ -1248,6 +1161,105 @@ def complex_film(conn):
         if st.button('⬅️ Back', width='stretch'):
             return 'home'
         
+        st.markdown('---')
+        new_act_error = False
+        
+        with st.expander('New Actress'):
+            if st.session_state.get('reset_actress', False):
+                st.session_state.reset_actress = False
+                st.session_state.side_actress_input = ''
+                st.session_state.side_actress_job = []
+
+            new_actress_input = st.text_input('New Actress Name*', placeholder='Format : Alphabet, Kanji', key='side_actress_input')
+            if new_actress_input:
+                try:
+                    new_actress_name, new_actress_native = new_actress_input.split(', ')
+                    st.write('Name: ', new_actress_name)
+                    st.write('Kanji: ', new_actress_native)
+                except Exception as e:
+                    st.error(f'Error : {e}')
+            new_nationality = st.selectbox('Nationality', options=COUNTRY_OPTS, key='side_actress_nationality')
+
+            new_job = st.multiselect(
+                "Job*", 
+                options=JOB_OPTS,
+                key=f"side_actress_job"
+            )
+            group_inputs = {}
+            idol_error = False
+            group_error = False
+
+            if "Idol" in new_job:
+                group_inputs["Idol"] = st.text_input(
+                    "Idol Group*",
+                    key=f"new_idol_group"
+                )
+                if st.checkbox('No Info', key='check_idol_group'):
+                    idol_error = False
+                    group_inputs['Idol'] = '?'
+                elif group_inputs['Idol'] == '':
+                    idol_error = True
+                else:
+                    idol_error = False
+
+            if "Ex-Member" in new_job:
+                group_inputs["Ex-Member"] = st.text_input(
+                    "Former Group*",
+                    key=f"new_ex_member_group"
+                )
+                if st.checkbox('No Info', key='check_ex_member_group'):
+                    group_error = False
+                    group_inputs['Ex-Member'] = '?'
+                if group_inputs['Ex-Member'] == '':
+                    group_error = True
+                else:
+                    group_error = False 
+
+            if idol_error or group_error or new_actress_input == '' or new_job == []:
+                new_act_error = True
+            else:
+                new_jobs = format_job_with_groups(new_job, group_inputs)
+                new_act_error = False
+            
+            if st.button('Add Actress', width='stretch'):
+                if new_actress_input and not new_act_error:
+                    # Create new row data
+                    new_row = pd.DataFrame([{
+                        'Review': 'Not Watched',
+                        'Picture': st.secrets.indicators.PLACEHOLDER_IMG,
+                        'Name (Alphabet)': new_actress_name,
+                        'Name (Native)': new_actress_native,
+                        'Birthdate': '?',
+                        'Age': '?',
+                        'Nationality': new_nationality,
+                        'Height (cm)': '? cm',
+                        'Job': new_jobs,
+                        'Favourite': 0
+                    }])
+
+
+                    # Add to DataFrame
+                    new_name_native = new_row['Name (Native)'].iloc[0]
+                    df_actress = st.session_state.actress_df
+
+                    if new_name_native in df_actress['Name (Native)'].values:
+                        st.warning(f"⚠️ Actress '{new_name_native}' already exist in database!")
+                        st.stop()
+                    else:
+                        df_actress = pd.concat([df_actress, new_row], ignore_index=True)   
+                        df_actress = df_actress.sort_values('Name (Alphabet)', key=lambda col: col.str.lower(), ascending=True, ignore_index=True)
+                        # Update ke Google Sheets
+                        if update_google_sheets(df_actress,conn,'actress'):
+                            st.success("✅ New actress added successfully to Google Sheets!")
+                            st.session_state.actress_df = values_handling(df_actress,'actress')  # Update session state
+                            st.session_state.reset_actress = True
+                            st.rerun()
+                        else:
+                            st.error("❌ Failed to add new actress to Google Sheets")
+                            st.stop()
+                else:
+                    st.warning('Fill mandatory fields (*)')
+                    st.rerun()
         st.markdown('---')
         show_recommend = st.toggle('Recommended', on_change=reset_page)
         st.markdown('---')
@@ -1284,7 +1296,6 @@ def complex_film(conn):
         filtered_df = filtered_df[filtered_df['Status'] == 'Recommended']
     
     display_film_grid(filtered_df, actress_df)
-    st.markdown('---')
     if st.button('⬆️ Back to top', width='stretch'):
         st.session_state.scroll_to_top = True
         st.rerun()
