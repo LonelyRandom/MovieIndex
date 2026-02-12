@@ -236,8 +236,11 @@ def display_film_grid(df, actress_df):
 
     if st.session_state.img_size == 'Device 1':
         device_width = 115
+        device_height = 163
     else:
         device_width = 106
+        device_height = 150
+
 
     if search_name:
         mask = (filtered_df['Title'].str.contains(search_name, case=False, na=False) |
@@ -250,7 +253,7 @@ def display_film_grid(df, actress_df):
     if info_filter != 'All':
         filtered_df = filtered_df[filtered_df['Info'] == info_filter]
 
-    total_pages = max(1, (len(filtered_df) + 27 - 1) // 27)  
+    total_pages = max(1, (len(filtered_df) + 30 - 1) // 30)  
 
     def set_page(p):
         st.session_state.film_page = p
@@ -308,8 +311,8 @@ def display_film_grid(df, actress_df):
         
         page = st.session_state.film_page
         
-        start_idx = (page - 1) * 27 
-        end_idx = min(start_idx + 27, len(filtered_df)) 
+        start_idx = (page - 1) * 30 
+        end_idx = min(start_idx + 30, len(filtered_df)) 
         st.markdown("---")
         st.caption(f"Showing {start_idx+1}-{end_idx} from {len(filtered_df)} actress")
         rows_to_display = filtered_df.iloc[start_idx:end_idx] 
@@ -335,7 +338,7 @@ def display_film_grid(df, actress_df):
                         # Tambahkan wrapper dengan fixed height
                         st.markdown(f"""
                             <div style="
-                                height: 170px;  /* Atur tinggi tetap */
+                                height: {device_height}px;  /* Atur tinggi tetap */
                                 width: 100%;
                                 overflow: hidden;
                                 display: flex;
@@ -859,6 +862,9 @@ def complex_film(conn):
         #         st.info('No Actress Selected!')
 
         with st.container(horizontal=True):
+            if st.button('❌ Cancel', width='stretch'):
+                st.session_state.editing_film_index = None
+                st.rerun()
             if st.button("💾 Save", width='stretch', type="primary", key=f"save_{index}"):
                 join_code = edited_title
                 clean_code = re.sub(r'[^\w]', '', join_code)
@@ -913,38 +919,38 @@ def complex_film(conn):
                             st.stop()
                 else:
                     final_picture_url = film['Picture']
-                    
-                # Update data di DataFrame
-                df.at[index, 'Status'] = edited_status
-                df.at[index, 'Info'] = edited_info
-                df.at[index, 'Picture'] = final_picture_url
-                df.at[index, 'Actress Name'] = edited_actress
-                df.at[index, 'Title'] = edited_title
-                df.at[index, 'Type'] = edited_type
-                df.at[index, 'Current Episode'] = edited_current_eps
-                df.at[index, 'Episode'] = edited_eps
-                df.at[index, 'Genre'] = edited_genre
-                df.at[index, 'Rating'] = edited_rating
-                df.at[index, 'Playlist'] = edited_playlist
-                df.at[index, 'Note'] = edited_note
-                df.at[index, 'Upload Type'] = pic_up
-                df.at[index, 'Synopsis'] = edited_synopsis
-                # df.at[index, 'Roles Detail'] = new_roles
-                
-                # Update ke Google Sheets
-                if update_google_sheets(df,conn,'film'):
-                    st.session_state.film_df = values_handling(df,'film')  # Update session state
+
+                if film['Title'] != edited_title and edited_title in df['Title'].values:
+                    st.warning(f'⚠️ Title {edited_title} already exist in database!')
                 else:
-                    st.error("❌ Failed to update Google Sheets")
-                    st.stop()
+                    # Update data di DataFrame
+                    df.at[index, 'Status'] = edited_status
+                    df.at[index, 'Info'] = edited_info
+                    df.at[index, 'Picture'] = final_picture_url
+                    df.at[index, 'Actress Name'] = edited_actress
+                    df.at[index, 'Title'] = edited_title
+                    df.at[index, 'Type'] = edited_type
+                    df.at[index, 'Current Episode'] = edited_current_eps
+                    df.at[index, 'Episode'] = edited_eps
+                    df.at[index, 'Genre'] = edited_genre
+                    df.at[index, 'Rating'] = edited_rating
+                    df.at[index, 'Playlist'] = edited_playlist
+                    df.at[index, 'Note'] = edited_note
+                    df.at[index, 'Upload Type'] = pic_up
+                    df.at[index, 'Synopsis'] = edited_synopsis
+                    # df.at[index, 'Roles Detail'] = new_roles
+
+                    # Update ke Google Sheets
+                    if update_google_sheets(df,conn,'film'):
+                        st.session_state.film_df = values_handling(df,'film')  # Update session state
+                    else:
+                        st.error("❌ Failed to update Google Sheets")
+                        st.stop()
+                    
+                    st.session_state.editing_film_index = None
+                    st.session_state.viewing_film_index = None
+                    st.rerun()
                 
-                st.session_state.editing_film_index = None
-                st.session_state.viewing_film_index = None
-                st.rerun()
-                
-            if st.button('❌ Cancel', width='stretch'):
-                st.session_state.editing_film_index = None
-                st.rerun()
 
         if st.session_state.delete_film == False:
             if st.button("🗑️ Delete Film", width='stretch', type="secondary", key=f"delete_{index}"):
@@ -1136,8 +1142,7 @@ def complex_film(conn):
                     new_film_title = new_row['Title'].iloc[0]
 
                     if new_film_title in df['Title'].values:
-                        st.warning(f'⚠️ Title {new_film_title} already exist in database')
-                        st.stop()
+                        errors = f'⚠️ Title {new_film_title} already exist in database'
                     else:
                         df = pd.concat([df,new_row], ignore_index=True)
                         if update_google_sheets(df,conn,'film'):
@@ -1150,7 +1155,7 @@ def complex_film(conn):
                 st.rerun()
             
         if errors:
-            st.error(errors)
+            st.warning(errors)
             st.stop()
             # elif new_title == '' or new_genre == '':
             #     st.warning('Fill mandatory field!')
@@ -1829,7 +1834,7 @@ def complex_actress(conn):
                 "AsianWiki", 
                 value=asianwiki,
                 placeholder='Enter AsianWiki...',
-                key=f"review_{index}"
+                key=f"asianwiki_{index}"
             )
 
             if edited_asianwiki == '':
@@ -1839,7 +1844,7 @@ def complex_actress(conn):
                 "MDL", 
                 value=mdl,
                 placeholder='Enter MDL...',
-                key=f"review_{index}"
+                key=f"mdl_{index}"
             )
 
             if edited_mdl == '':
@@ -2415,6 +2420,7 @@ def complex_actress(conn):
             for i in range(0,len(filtered_df)):
                 index = filtered_df.index[i]
                 review_text = filtered_df['Review'].iloc[i]
+                name = filtered_df["Name (Alphabet)"].iloc[i]
 
                 if review_text == 'Not Watched':
                     review_icon = '🔴'
@@ -2427,18 +2433,18 @@ def complex_actress(conn):
                     review_color = 'grey'
                 with st.container(key=f'actress_card_{i}'):
                     with st.container(horizontal=True, horizontal_alignment='distribute'):
-                        with st.container():
+                        with st.container(width='content'):
                             st.markdown(f"""
                             <div style="line-height: 1; margin-bottom: 10px;">
                                 <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">
-                                    {filtered_df["Name (Alphabet)"].iloc[i]}
+                                    {name[:23] + "..." if len(name) > 23 else name}
                                 </div>
                                 <div style="font-size: 0.8rem; color: #d7dae0; margin-top: 0;">
                                     {filtered_df["Name (Native)"].iloc[i]}
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
-                        with st.container(horizontal_alignment='right', horizontal=True ):
+                        with st.container(horizontal_alignment='right', horizontal=True, width='content'):
                             st.badge(f"{filtered_df['Review'].iloc[i]}",icon=review_icon, color=review_color)
                             if filtered_df['Favourite'].iloc[i] == 1:
                                 st.badge(f"",icon='⭐', color='yellow',width='content')
