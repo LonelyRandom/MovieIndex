@@ -314,7 +314,7 @@ def display_film_grid(df, actress_df):
         start_idx = (page - 1) * 30 
         end_idx = min(start_idx + 30, len(filtered_df)) 
         st.markdown("---")
-        st.caption(f"Showing {start_idx+1}-{end_idx} from {len(filtered_df)} actress")
+        st.caption(f"Showing {start_idx+1}-{end_idx} from {len(filtered_df)} films")
         rows_to_display = filtered_df.iloc[start_idx:end_idx] 
 
         st.markdown(
@@ -1142,13 +1142,12 @@ def complex_film(conn):
                     new_film_title = new_row['Title'].iloc[0]
 
                     if new_film_title in df['Title'].values:
-                        errors = f'⚠️ Title {new_film_title} already exist in database'
+                        errors = f'⚠️ "{new_film_title}" already exist in database'
                     else:
                         df = pd.concat([df,new_row], ignore_index=True)
                         if update_google_sheets(df,conn,'film'):
                             st.session_state.film_df = values_handling(df,'film')
-                    
-                    st.rerun()
+                        st.rerun()
                 else:
                     errors = 'Fill actress role name first! (*)'
             if st.button('Close', type='primary', width='stretch'):
@@ -2460,7 +2459,7 @@ def complex_actress(conn):
                                 align-items: center;
                                 background: white;
                             ">
-                                <img src="{filtered_df['Picture'][i]}" 
+                                <img src="{filtered_df['Picture'].iloc[i]}" 
                                     style="
                                         width: 100%;
                                         height: 100%;
