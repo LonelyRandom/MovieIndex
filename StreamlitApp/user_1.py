@@ -544,7 +544,11 @@ def complex_film(conn):
             st.image(film['Picture'], width=200)
         
         with st.expander('Synopsis'):
-            st.write(film['Synopsis'])
+            if pd.notna(film['Synopsis']):
+                text_synopsis = film['Synopsis']
+            else:
+                text_synopsis = '⚠️ Synopsis not found!'
+            st.write(text_synopsis)
         filtered_actress_df = actress_df.copy()
 
         actress_list = film['Actress Name'].split(', ')
@@ -726,7 +730,16 @@ def complex_film(conn):
 
         edited_title = st.text_area('Title', placeholder='Enter film title...', value=film['Title'], key=f'film_title_{index}')
 
-        edited_synopsis = st.text_area('Synopsis', placeholder='Enter film synopsis...', value=film['Synopsis'], key=f'film_synopsis_{index}')
+        if pd.notna(film['Synopsis']) and film['Synopsis'] != '⚠️ Synopsis not found!':
+            text_synopsis = film['Synopsis']
+        else:
+            text_synopsis = ''
+
+        edited_synopsis = st.text_area('Synopsis', placeholder='Enter film synopsis...', value=text_synopsis, key=f'film_synopsis_{index}')
+        
+        if edited_synopsis == '':
+            edited_synopsis = '⚠️ Synopsis not found!'
+        
         selected_actress = st.multiselect(
             'Actress', 
             options = ACTRESS_OPTS, 
