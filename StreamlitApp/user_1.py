@@ -1314,6 +1314,8 @@ def complex_film(conn):
     if show_recommend:
         filtered_df = filtered_df[filtered_df['Status'] == 'Recommended']
     
+    filtered_df = filtered_df.sort_values(by='Title', ascending=True)
+    
     display_film_grid(filtered_df, actress_df)
     if st.button('⬆️ Back to top', width='stretch'):
         st.session_state.scroll_to_top = True
