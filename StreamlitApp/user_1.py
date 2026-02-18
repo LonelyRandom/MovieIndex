@@ -66,7 +66,8 @@ GENRE_OPTS = [
 
 TYPE_OPTS = [
     "Movie",
-    "Series"
+    "Series",
+    "TV Show"
 ]
 
 
@@ -279,6 +280,7 @@ def display_film_grid(df, actress_df):
                         args=(i,)
                     ):
                         st.session_state.scroll_to_here = True
+                        st.rerun()
         else:
             with st.container(key='page_button_top', horizontal=True, horizontal_alignment='center'):
                 if st.button('⬅️',key='previous_top', disabled=(st.session_state.film_page == 1), on_click=set_page, args=(st.session_state.film_page-1,)):
@@ -304,9 +306,12 @@ def display_film_grid(df, actress_df):
                         args=(i,)
                     ):
                         st.session_state.scroll_to_here = True
+                        st.rerun()
                 
                 if st.button('➡️',key='next_top', disabled=(st.session_state.film_page == total_pages), on_click=set_page, args=(st.session_state.film_page+1,)):
                     st.session_state.scroll_to_here = True
+                    st.rerun()
+
                 
         
         page = st.session_state.film_page
@@ -376,10 +381,13 @@ def display_film_grid(df, actress_df):
                         args=(i,)
                     ):
                         st.session_state.scroll_to_here = True
+                        st.rerun()
         else:
             with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
                 if st.button('⬅️',key='previous_bottom', disabled=(st.session_state.film_page == 1), on_click=set_page, args=(st.session_state.film_page-1,)):
                     st.session_state.scroll_to_here = True
+                    st.rerun()
+
                 
                 start_page = max(1, st.session_state.film_page - 1)  
                 end_page = min(total_pages, st.session_state.film_page + 2)  
@@ -401,9 +409,12 @@ def display_film_grid(df, actress_df):
                         args=(i,)
                     ):
                         st.session_state.scroll_to_here = True
+                        st.rerun()
                 
                 if st.button('➡️',key='next_bottom', disabled=(st.session_state.film_page == total_pages), on_click=set_page, args=(st.session_state.film_page+1,)):
-                    st.session_state.scroll_to_here = True                 
+                    st.session_state.scroll_to_here = True   
+                    st.rerun()
+
     else:
         st.info('No film match the filter')
 
@@ -1055,13 +1066,13 @@ def complex_film(conn):
 
         new_type = st.selectbox('Type', key='new_type', options=TYPE_OPTS)
 
-        if new_type == 'Series':
-            new_episode = st.number_input('Episode', key='new_episode', min_value=1)
-            new_info = st.selectbox('Info', key='new_info_s', options=INFO_OPTS_S)
-        else:
+        if new_type == 'Movie':
             new_episode = '?'
             new_current_eps = '?'
             new_info = st.selectbox('Info',key='new_info_m', options=INFO_OPTS_M)
+        else:
+            new_episode = st.number_input('Episode', key='new_episode', min_value=1)
+            new_info = st.selectbox('Info', key='new_info_s', options=INFO_OPTS_S)
         
 
         if new_info == 'On Going':  
