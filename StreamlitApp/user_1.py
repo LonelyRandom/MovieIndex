@@ -10,6 +10,8 @@ from dateutil.relativedelta import relativedelta
 from streamlit_star_rating import st_star_rating
 from st_clickable_images import clickable_images
 from streamlit_scroll_to_top import scroll_to_here
+import gspread
+from google.oauth2.service_account import Credentials
 
 # ACTRESS OPTS
 REVIEW_OPTS = [
@@ -70,6 +72,48 @@ TYPE_OPTS = [
     "TV Show"
 ]
 
+@st.cache_resource
+def get_gsheet_client():
+    scope = [
+        "https://www.googleapis.com/auth/spreadsheets",
+        "https://www.googleapis.com/auth/drive"
+    ]
+
+    creds = Credentials.from_service_account_info(
+        st.secrets["connections"]["gsheets"],
+        scopes=scope
+    )
+
+    return gspread.authorize(creds)
+
+
+@st.cache_resource()
+def film_worksheet():
+    client = get_gsheet_client()
+
+    spreadsheet = client.open(
+        st.secrets["indicators"]["SPREAD_TITLE"]
+    )
+
+    worksheet = spreadsheet.worksheet(
+        st.secrets["indicators"]["USER_1_CODE"]
+    )
+
+    return worksheet
+
+@st.cache_resource()
+def actress_worksheet():
+    client = get_gsheet_client()
+
+    spreadsheet = client.open(
+        st.secrets["indicators"]["SPREAD_TITLE"]
+    )
+
+    worksheet = spreadsheet.worksheet(
+        st.secrets["indicators"]["USER_1_LIST"]
+    )
+
+    return worksheet
 
 def parse_jobs_with_group(job_text):
     """
@@ -674,10 +718,10 @@ def complex_film(conn):
                 st.badge(film['Info'], icon=info_icon, color=info_color)
 
                 st.markdown('### Episode')
-                if type_text == 'Series':
-                    st.write(f"{str(film['Current Episode'])}/{str(film['Episode'])}")
-                else:
+                if type_text == 'Movie':
                     st.write('--')
+                else:
+                    st.write(f"{str(film['Current Episode'])}/{str(film['Episode'])}")
 
                 st.markdown('### Playlist')
                 st.info(film['Playlist']) 
@@ -775,16 +819,16 @@ def complex_film(conn):
 
         edited_type = st.selectbox('Type', options=TYPE_OPTS, index=type_index)
 
-        if edited_type == 'Series':
+        if edited_type == 'Movie':
+            edited_eps = '?'
+            edited_info = st.selectbox('Info', options=INFO_OPTS_M, index=info_m_index)
+        else:
             if film['Episode'] == '?':
                 eps = 1
             else:
                 eps = int(film['Episode'])
             edited_eps = st.number_input('Episode',min_value=1, value=eps)
             edited_info = st.selectbox('Info', options=INFO_OPTS_S, index=info_s_index)
-        else:
-            edited_eps = '?'
-            edited_info = st.selectbox('Info', options=INFO_OPTS_M, index=info_m_index)
 
         if edited_info == 'On Going':
             if film['Current Episode'] == '?':
@@ -948,29 +992,32 @@ def complex_film(conn):
                     st.warning(f'⚠️ Title {edited_title} already exist in database!')
                 else:
                     # Update data di DataFrame
-                    df.at[index, 'Status'] = edited_status
-                    df.at[index, 'Info'] = edited_info
-                    df.at[index, 'Picture'] = final_picture_url
-                    df.at[index, 'Actress Name'] = edited_actress
-                    df.at[index, 'Title'] = edited_title
-                    df.at[index, 'Type'] = edited_type
-                    df.at[index, 'Current Episode'] = edited_current_eps
-                    df.at[index, 'Episode'] = edited_eps
-                    df.at[index, 'Genre'] = edited_genre
-                    df.at[index, 'Rating'] = edited_rating
-                    df.at[index, 'Playlist'] = edited_playlist
-                    df.at[index, 'Note'] = edited_note
-                    df.at[index, 'Upload Type'] = pic_up
-                    df.at[index, 'Synopsis'] = edited_synopsis
-                    # df.at[index, 'Roles Detail'] = new_roles
+                    edited_row = [
+                        edited_status,
+                        edited_info,
+                        final_picture_url,
+                        edited_title,
+                        edited_type,
+                        edited_current_eps,
+                        edited_eps,
+                        edited_genre,
+                        edited_rating,
+                        edited_playlist,
+                        edited_actress,
+                        edited_note,
+                        pic_up,
+                        edited_synopsis
+                    ]
 
-                    # Update ke Google Sheets
-                    if update_google_sheets(df,conn,'film'):
-                        st.session_state.film_df = values_handling(df,'film')  # Update session state
-                    else:
-                        st.error("❌ Failed to update Google Sheets")
-                        st.stop()
-                    
+                    row = index + 2
+                    film_worksheet().update(f'A{row}:N{row}', [edited_row])
+
+                    df.loc[index] = edited_row
+
+                    st.session_state.film_df = values_handling(df,'film')  # Update session state
+                    st.toast("✅ Data edited successfully!")
+                    time.sleep(1)
+
                     st.session_state.editing_film_index = None
                     st.session_state.viewing_film_index = None
                     st.rerun()
@@ -1001,13 +1048,10 @@ def complex_film(conn):
 
         df.drop(index, inplace=True)
         df.reset_index(drop=True, inplace=True)
+
+        film_worksheet().delete_row(int(index)+2)
         
-        # Update ke Google Sheets
-        if update_google_sheets(df,conn,'film'):
-            st.session_state.film_df = values_handling(df,'film') 
-        else:
-            st.error("❌ Failed to delete actress from Google Sheets")
-            st.stop()
+        st.session_state.film_df = values_handling(df,'film') 
         
         st.session_state.editing_film_index = None
         st.session_state.viewing_film_index = None
@@ -1144,33 +1188,33 @@ def complex_film(conn):
                     else:
                         picture_url = st.secrets.indicators.PLACEHOLDER_IMG_POSTER
                     
-                    new_row = pd.DataFrame([{
-                        'Status': new_status,
-                        'Info': new_info,
-                        'Picture': picture_url,
-                        'Title': new_title,
-                        'Type': new_type,
-                        'Current Episode': new_current_eps,
-                        'Episode': str(new_episode),
-                        'Genre': new_genre,
-                        'Rating': new_rating,
-                        'Playlist': new_playlist,
-                        'Actress Name': new_actress,
-                        'Note' : new_note,
-                        'Upload Type' : pic_up,
-                        'Synopsis' : new_synopsis
-                        # 'Roles Detail' : new_roles
-                    }])
+                    new_row = [
+                        new_status,
+                        new_info,
+                        picture_url,
+                        new_title,
+                        new_type,
+                        new_current_eps,
+                        str(new_episode),
+                        new_genre,
+                        new_rating,
+                        new_playlist,
+                        new_actress,
+                        new_note,
+                        pic_up,
+                        new_synopsis
+                    ]
 
                     df = st.session_state.film_df
-                    new_film_title = new_row['Title'].iloc[0]
 
-                    if new_film_title in df['Title'].values:
-                        errors = f'⚠️ "{new_film_title}" already exist in database'
+                    if new_title in df['Title'].values:
+                        errors = f'⚠️ "{new_title}" already exist in database'
                     else:
-                        df = pd.concat([df,new_row], ignore_index=True)
-                        if update_google_sheets(df,conn,'film'):
-                            st.session_state.film_df = values_handling(df,'film')
+                        new_row_df = pd.DataFrame([new_row], columns=df.columns)
+                        df = pd.concat([df,new_row_df], ignore_index=True)
+                        st.session_state.film_df = values_handling(df,'film')
+                        st.toast("✅ Data added successfully!")
+                        time.sleep(1)
                         st.rerun()
                 else:
                     errors = 'Fill actress role name first! (*)'
@@ -1180,10 +1224,6 @@ def complex_film(conn):
         if errors:
             st.warning(errors)
             st.stop()
-            # elif new_title == '' or new_genre == '':
-            #     st.warning('Fill mandatory field!')
-            # elif not selected_actress:
-            #     st.info('No Actress Selected!')
             
     with st.sidebar:
         if st.button('⬅️ Back', width='stretch'):
@@ -2055,27 +2095,31 @@ def complex_actress(conn):
                 st.write(not job_error)
                 st.stop()
 
-            # Update data di DataFrame
-            df.at[index, 'Review'] = edited_review
-            df.at[index, 'Picture'] = final_picture_url
-            df.at[index, 'Name (Alphabet)'] = edited_name
-            df.at[index, 'Name (Native)'] = edited_native
-            df.at[index, 'Birthdate'] = edited_birthdate
-            df.at[index, 'Age'] = age
-            df.at[index, 'Nationality'] = edited_nationality
-            df.at[index, 'Height (cm)'] = edited_height
-            df.at[index, 'Job'] = edited_jobs
-            df.at[index, 'Favourite'] = edited_favourite
-            df.at[index, 'AsianWiki'] = edited_asianwiki
-            df.at[index, 'MDL'] = edited_mdl
+            edited_row = [
+                edited_review,
+                final_picture_url,
+                edited_name,
+                edited_native,
+                edited_birthdate,
+                age,
+                edited_nationality,
+                edited_height,
+                edited_jobs,
+                edited_favourite,
+                edited_asianwiki,
+                edited_mdl
+            ]
             
-            # Update ke Google Sheets
-            if update_google_sheets(df,conn,'actress'):
-                st.session_state.actress_df = values_handling(df,'actress')  # Update session state
-            else:
-                st.error("❌ Failed to update Google Sheets")
-                st.stop()
+            row = index + 2
+            actress_worksheet().update(f'A{row}:L{row}', [edited_row])
             
+            df.loc[index] = edited_row
+
+            st.session_state.actress_df = values_handling(df,'actress')  # Update session state
+            
+            st.toast("✅ Data edited successfully!")
+            time.sleep(1)
+
             st.session_state.editing_index = None
             st.rerun()
     
@@ -2091,12 +2135,11 @@ def complex_actress(conn):
         df.drop(index, inplace=True)
         df.reset_index(drop=True, inplace=True)
         
-        # Update ke Google Sheets
-        if update_google_sheets(df,conn,'actress'):
-            st.success("✅ Actress deleted successfully from Google Sheets!")
-            st.session_state.actress_df = values_handling(df,'actress')  # Update session state
-        else:
-            st.error("❌ Failed to delete actress from Google Sheets")
+        actress_worksheet().delete_row(int(index)+2)
+
+        st.session_state.actress_df = values_handling(df,'actress')  # Update session state
+        st.toast("✅ Data deleted successfully!")
+        time.sleep(1)
         
         st.session_state.editing_index = None
         st.session_state.viewing_index = None
@@ -2226,37 +2269,37 @@ def complex_actress(conn):
                     picture_url = st.secrets.indicators.PLACEHOLDER_IMG
 
                 # Create new row data
-                new_row = pd.DataFrame([{
-                    'Review': new_review,
-                    'Picture': picture_url,
-                    'Name (Alphabet)': new_name,
-                    'Name (Native)': new_native,
-                    'Birthdate': new_birthdate,
-                    'Age': new_age,
-                    'Nationality': new_nationality,
-                    'Height (cm)': new_height,
-                    'Job': new_jobs,
-                    'Favourite': new_favourite,
-                    'AsianWiki' : new_asianwiki,
-                    'MDL' : new_mdl
-                }])
+                new_row = [
+                    new_review,
+                    picture_url,
+                    new_name,
+                    new_native,
+                    new_birthdate,
+                    new_age,
+                    new_nationality,
+                    new_height,
+                    new_jobs,
+                    new_favourite,
+                    new_asianwiki,
+                    new_mdl
+                ]
 
                 # Add to DataFrame
                 df = st.session_state.actress_df
-                new_name_native = new_row['Name (Native)'].iloc[0]
 
-                if new_name_native in df['Name (Native)'].values:
-                    st.warning(f"⚠️ Actress '{new_name_native}' already exist in database!")
+
+                if new_native in df['Name (Native)'].values:
+                    st.warning(f"⚠️ Actress '{new_native}' already exist in database!")
                     st.stop()
                 else:
-                    df = pd.concat([df, new_row], ignore_index=True)       
-                    # Update ke Google Sheets
-                    if update_google_sheets(df,conn,'actress'):
-                        st.session_state.actress_df = values_handling(df,'actress')  # Update session state
-                    else:
-                        st.error("❌ Failed to add new actress to Google Sheets")
-                        st.stop()
-                    
+                    actress_worksheet().append_row(new_row)
+
+                    new_row_df = pd.DataFrame([new_row_df], columns=df.columns)
+                    df = pd.concat([df, new_row_df], ignore_index=True)       
+
+                    st.session_state.actress_df = values_handling(df,'actress')  # Update session state
+                    st.toast("✅ Data added successfully!")
+                    time.sleep(1)                    
                     st.session_state.adding_new = False
                     st.rerun()
             else:
