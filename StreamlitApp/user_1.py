@@ -169,26 +169,6 @@ def load_data_film(conn):
     except Exception as e:
         return pd.DataFrame()
     
-def update_google_sheets(df,conn,type):
-    try:
-        st.toast("✅ Google Sheets updated successfully!")
-        if not isinstance(df, pd.DataFrame):
-            st.error("Data must be a pandas DataFrame")
-            return False
-        
-        df_to_update = df.copy()
-        if type == 'actress':
-            sheet = 'NList'
-        else:
-            sheet = 'NFilm'
-            
-        conn.update(
-            worksheet=sheet, 
-            data=df_to_update
-        )
-        return True
-    except:
-        return False
 
 def init_dataframe_actress(conn):
     """Inisialisasi DataFrame di session state"""
@@ -1210,6 +1190,7 @@ def complex_film(conn):
                     if new_title in df['Title'].values:
                         errors = f'⚠️ "{new_title}" already exist in database'
                     else:
+                        film_worksheet().append_row(new_row)
                         new_row_df = pd.DataFrame([new_row], columns=df.columns)
                         df = pd.concat([df,new_row_df], ignore_index=True)
                         st.session_state.film_df = values_handling(df,'film')
@@ -1292,20 +1273,20 @@ def complex_film(conn):
             if st.button('Add Actress', width='stretch'):
                 if new_actress_input and not new_act_error:
                     # Create new row data
-                    new_row = pd.DataFrame([{
-                        'Review': 'Not Watched',
-                        'Picture': st.secrets.indicators.PLACEHOLDER_IMG,
-                        'Name (Alphabet)': new_actress_name,
-                        'Name (Native)': new_actress_native,
-                        'Birthdate': '?',
-                        'Age': '?',
-                        'Nationality': new_nationality,
-                        'Height (cm)': '? cm',
-                        'Job': new_jobs,
-                        'Favourite': 0,
-                        'AsianWiki' : '--',
-                        'MDL' : '--'
-                    }])
+                    new_row = [
+                        'Not Watched',
+                        st.secrets.indicators.PLACEHOLDER_IMG,
+                        new_actress_name,
+                        new_actress_native,
+                        '?',
+                        '?',
+                        new_nationality,
+                        '? cm',
+                        new_jobs,
+                        0,
+                        '--',
+                        '--'
+                    ]
 
 
                     # Add to DataFrame
@@ -1316,17 +1297,16 @@ def complex_film(conn):
                         st.warning(f"⚠️ Actress '{new_name_native}' already exist in database!")
                         st.stop()
                     else:
-                        df_actress = pd.concat([df_actress, new_row], ignore_index=True)   
+                        actress_worksheet().append_row(new_row)
+
+                        new_row_df = pd.DataFrame([new_row], columns=df.columns)
+                        
+                        df_actress = pd.concat([df_actress, new_row_df], ignore_index=True)   
                         df_actress = df_actress.sort_values('Name (Alphabet)', key=lambda col: col.str.lower(), ascending=True, ignore_index=True)
                         # Update ke Google Sheets
-                        if update_google_sheets(df_actress,conn,'actress'):
-                            st.success("✅ New actress added successfully to Google Sheets!")
-                            st.session_state.actress_df = values_handling(df_actress,'actress')  # Update session state
-                            st.session_state.reset_actress = True
-                            st.rerun()
-                        else:
-                            st.error("❌ Failed to add new actress to Google Sheets")
-                            st.stop()
+                        st.session_state.actress_df = values_handling(df_actress,'actress')  # Update session state
+                        st.session_state.reset_actress = True
+                        st.rerun()
                 else:
                     st.warning('Fill mandatory fields (*)')
                     st.rerun()
@@ -1539,28 +1519,8 @@ def complex_actress(conn):
     def refresh_data(conn):
         """Refresh data dari Google Sheets ke session state"""
         try:
-            with st.spinner("🔄 Refreshing data from Google Sheets..."):
-                # Load data baru
-                st.cache_data.clear()
-                df = load_data_actress(conn)
-
-                if not df.empty:
-                    # Clear dan update session state
-                    st.session_state.actress_df = df
-                    st.session_state.data_loaded = True
-                    
-                    # Clear editing/viewing states
-                    if "editing_index" in st.session_state:
-                        st.session_state.editing_index = None
-                    if "viewing_index" in st.session_state:
-                        st.session_state.viewing_index = None
-                    if "adding_new" in st.session_state:
-                        st.session_state.adding_new = False
-                    
-                    st.rerun()
-                else:
-                    st.warning("⚠️ No data found in Google Sheets")
-                    st.stop()
+            init_dataframe_actress(conn)
+            init_dataframe_film(conn)
         except Exception as e:
             st.error(f"❌ Error refreshing data: {e}")
             st.stop()
@@ -2338,10 +2298,9 @@ def complex_actress(conn):
             st.session_state.adding_new = True
             st.rerun()
         
-        # # Tombol refresh data
-        # if st.button("🔄 Refresh Data", width='stretch'):
-        #     refresh_data()
-        #     st.rerun()
+        # Tombol refresh data
+        if st.button("🔄 Refresh Data", width='stretch'):
+            refresh_data(conn)
         
         if st.session_state.log_out_btn == False:
             if st.button('🔐 Logout', width='stretch'):
