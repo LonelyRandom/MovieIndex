@@ -12,6 +12,7 @@ from st_clickable_images import clickable_images
 from streamlit_scroll_to_top import scroll_to_here
 import gspread
 from google.oauth2.service_account import Credentials
+import string
 
 # ACTRESS OPTS
 REVIEW_OPTS = [
@@ -2254,7 +2255,7 @@ def complex_actress(conn):
                 else:
                     actress_worksheet().append_row(new_row)
 
-                    new_row_df = pd.DataFrame([new_row_df], columns=df.columns)
+                    new_row_df = pd.DataFrame([new_row], columns=df.columns)
                     df = pd.concat([df, new_row_df], ignore_index=True)       
 
                     st.session_state.actress_df = values_handling(df,'actress')  # Update session state
@@ -2349,7 +2350,7 @@ def complex_actress(conn):
                 st.rerun()
             
         country = st.selectbox('Country', options=COUNTRY_FILTER, key='check_country')
-
+        a_z_filter = st.selectbox('Filter by Name (A–Z)', options=['All'] + list(string.ascii_uppercase))
 
         # Filter DataFrame berdasarkan status
         filtered_df = df.copy()
@@ -2388,6 +2389,9 @@ def complex_actress(conn):
         filtered_df = filtered_df[final_mask]
         if country != 'All':
             filtered_df = filtered_df[filtered_df['Nationality'] == country] 
+
+        if a_z_filter != 'All':
+            filtered_df = filtered_df[filtered_df['Name (Alphabet)'].str.startswith(a_z_filter)] 
 
         if not search_query and not search_query.isspace() and not filtered_df.empty:
             st.write('')
