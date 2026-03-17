@@ -208,9 +208,13 @@ def reset_page():
     """Reset halaman ke 1"""
     st.session_state.film_page = 1
 
+def reset_page_actress():
+    """Reset halaman ke 1"""
+    st.session_state.actress_page = 1
+
 
 # --- FUNGSI ALTERNATIF: Grid Layout tanpa Pagination ---
-def display_film_grid(df, actress_df):
+def display_film_grid(df, actress_df, device):
     """
     Menampilkan semua card sekaligus dalam grid
     """
@@ -253,14 +257,8 @@ def display_film_grid(df, actress_df):
             st.rerun()
     playlist_filter = st.selectbox("Playlist:", options=PLAYLIST_OPTS, on_change=reset_page)
     info_filter = st.selectbox("Info:", options=INFO_OPTS_MIX, on_change=reset_page)
-    if st.session_state.img_size == 'Device 1':
-        device_index = 0
-    else:
-        device_index = 1
 
-    st.session_state.img_size = st.selectbox("Device",options=['Device 1', 'Device 2'], on_change=reset_page, index=device_index)
-
-    if st.session_state.img_size == 'Device 1':
+    if device == 'Device 1':
         device_width = 115
         device_height = 163
     else:
@@ -519,7 +517,7 @@ def complex_home(conn):
     """, unsafe_allow_html=True)
 
 
-def complex_film(conn):
+def complex_film(conn, device):
     # Inisialisasi variabel kontrol
     if "editing_film_index" not in st.session_state:
         st.session_state.editing_film_index = None
@@ -1348,7 +1346,7 @@ def complex_film(conn):
     
     filtered_df = filtered_df.sort_values(by='Title', ascending=True)
     
-    display_film_grid(filtered_df, actress_df)
+    display_film_grid(filtered_df, actress_df, device)
     if st.button('⬆️ Back to top', width='stretch'):
         st.session_state.scroll_to_top = True
         st.rerun()
@@ -1499,7 +1497,7 @@ def complex_film(conn):
     </script>
     """, unsafe_allow_html=True)
 
-def complex_actress(conn):
+def complex_actress(conn, device):
 
     if 'actress_initial' not in st.session_state:
         st.session_state.actress_initial = False
@@ -2273,7 +2271,7 @@ def complex_actress(conn):
 
     # Sidebar
     with st.sidebar:
-        if st.button('⬅️ Back', width='stretch'):
+        if st.button('⬅️ Back', width='stretch', on_click=reset_page_actress):
             return 'home'
         st.header(f'Actress Listed : {len(st.session_state.actress_df)}')
         st.markdown("---")
@@ -2282,20 +2280,21 @@ def complex_actress(conn):
             "View Mode",
             ["Gallery", "List"],
             key='display_mode_radio',
-            index=0 if st.session_state.display_mode == "Gallery" else 1
+            index=0 if st.session_state.display_mode == "Gallery" else 1,
+            on_change=reset_page_actress
         )
         st.markdown("---")
         with st.container(key='review_filter'):
             st.header("Review Filters")
-            show_actress_watched = st.checkbox("Watched", value=True)
-            show_actress_not_watched = st.checkbox("Not Watched", value=True)
+            show_actress_watched = st.checkbox("Watched", value=True, on_change=reset_page_actress)
+            show_actress_not_watched = st.checkbox("Not Watched", value=True, on_change=reset_page_actress)
         with st.container(key='Favourite'):
             st.header("Favourite Filters")
-            show_favourite = st.checkbox("Favourite",value=False)
+            show_favourite = st.checkbox("Favourite",value=False, on_change=reset_page_actress)
         
         st.markdown("---")
         st.subheader("Management")
-        if st.button("➕ Add New Actress", width='stretch'):
+        if st.button("➕ Add New Actress", width='stretch', on_click=reset_page_actress):
             st.session_state.adding_new = True
             st.rerun()
         
@@ -2310,7 +2309,7 @@ def complex_actress(conn):
         else:
             st.warning('Are you sure want to logout?')
             with st.container(horizontal=True):
-                if st.button('Yes', width='stretch'):
+                if st.button('Yes', width='stretch', on_click=reset_page_actress):
                     st.session_state.log_out_btn = False
                     return 'login'
                 if st.button('No', width='stretch'):
@@ -2337,20 +2336,19 @@ def complex_actress(conn):
             st.session_state.search_reset = False
             st.session_state.search_bar = ''
             st.session_state.check_country = 'All'
-        st.space('small')    
-        st.space('small')    
         
+
         search_container = st.container(horizontal=True, vertical_alignment='bottom')
 
         with search_container:
             search_query = st.text_input("🔍 Search actress by Name (Alphabet / Kanji):", 
-                            placeholder="Type name to search...", key='search_bar')
-            if st.button('Clear'):
+                            placeholder="Type name to search...", key='search_bar', on_change=reset_page_actress)
+            if st.button('Clear', on_click=reset_page_actress):
                 st.session_state.search_reset = True
                 st.rerun()
             
-        country = st.selectbox('Country', options=COUNTRY_FILTER, key='check_country')
-        a_z_filter = st.selectbox('Filter by Name (A–Z)', options=['All'] + list(string.ascii_uppercase))
+        country = st.selectbox('Country', options=COUNTRY_FILTER, key='check_country', on_change=reset_page_actress)
+        a_z_filter = st.selectbox('Filter by Name (A–Z)', options=['All'] + list(string.ascii_uppercase), on_change=reset_page_actress)
 
         # Filter DataFrame berdasarkan status
         filtered_df = df.copy()
@@ -2393,65 +2391,122 @@ def complex_actress(conn):
         if a_z_filter != 'All':
             filtered_df = filtered_df[filtered_df['Name (Alphabet)'].str.startswith(a_z_filter)] 
 
-        if not search_query and not search_query.isspace() and not filtered_df.empty:
-            st.write('')
-        elif search_query and not search_query.isspace() and not filtered_df.empty:
+        if search_query and not search_query.isspace() and not filtered_df.empty:
             search_lower = search_query.lower().strip()
             search_mask = (
                 filtered_df['Name (Alphabet)'].fillna('').str.lower().str.contains(search_lower, na=False) |
                 filtered_df['Name (Native)'].fillna('').str.contains(search_query.strip(), na=False)
             )
             filtered_df = filtered_df[search_mask]
-            # filtered_df = filtered_df.reset_index(True)
-            st.info(f'Showing {len(filtered_df)} results')
-        
+
+        total_actress_pages = max(1, (len(filtered_df) + 30 - 1) // 30)
+        if st.session_state.scroll_to_here:
+            scroll_to_here(0,key='here')  # Scroll to the top of the page
+            st.session_state.scroll_to_here = False
+        st.markdown('---')
+        if 'actress_page' not in st.session_state:
+            st.session_state.actress_page = 1
+
+        def set_page(p):
+            st.session_state.actress_page = p
+        st.markdown(
+            f"<div style='text-align:center; font-weight:600;padding-bottom:15px'>Page {st.session_state.actress_page}</div>",
+            unsafe_allow_html=True
+        )
+
+        if total_actress_pages <= 6:
+            with st.container(key='page_button', horizontal=True, horizontal_alignment='center'):
+                for i in range(1, total_actress_pages + 1):
+                    st.button(
+                        str(i),
+                        key=f'page_top_{i}',
+                        disabled=(i == st.session_state.actress_page),
+                        on_click=set_page,
+                        args=(i,)
+                    )
         else:
+            with st.container(key='page_button_top', horizontal=True, horizontal_alignment='center'):
+                st.button('⬅️',key='previous_top', disabled=(st.session_state.actress_page == 1), on_click=set_page, args=(st.session_state.actress_page-1,))
+                
+                start_page = max(1, st.session_state.actress_page - 1)  
+                end_page = min(total_actress_pages, st.session_state.actress_page + 2)  
+                
+                pages_to_show = range(start_page, end_page + 1)
+                
+                if len(pages_to_show) < 4:
+                    if start_page == 1:
+                        pages_to_show = range(1, min(5, total_actress_pages + 1))
+                    else:
+                        pages_to_show = range(max(1, total_actress_pages - 3), total_actress_pages + 1)
+                
+                for i in pages_to_show:
+                    st.button(
+                        str(i),
+                        key=f'page_top_{i}',
+                        disabled=(i == st.session_state.actress_page),
+                        on_click=set_page,
+                        args=(i,)
+                    )
+                
+                st.button('➡️',key='next_top', disabled=(st.session_state.actress_page == total_actress_pages), on_click=set_page, args=(st.session_state.actress_page+1,))
+                
+        
+        page = st.session_state.actress_page
+        
+        start_idx = (page - 1) * 30 # page = 2 / Start idx = 8
+        end_idx = min(start_idx + 30, len(filtered_df)) # end idx = 16
+        
+        st.caption(f"Showing {start_idx+1}-{end_idx} from {len(filtered_df)} films")
+        
+        rows_to_display = filtered_df.iloc[start_idx:end_idx] #[8,15]
+        if search_query and not search_query.isspace() and not filtered_df.empty:
+            st.info(f'Showing {len(filtered_df)} results')
+        elif search_query and not search_query.isspace() and filtered_df.empty:
             st.warning("No actresses match the selected filters.")
-            st.stop()
 
         if st.session_state.display_mode == "Gallery":
-            st.write('Under Development!')
             try:
-                if st.session_state.get('reset_click', False):
-                    st.session_state.click_image = -1
-
-                clicked = clickable_images(
-                    filtered_df['Picture'].dropna().tolist(),
-                    titles=filtered_df["Name (Alphabet)"].fillna("").tolist(),
-                    div_style={
-                        "display": "grid",
-                        "grid-template-columns": "repeat(3, 1fr)",
-                        "gap": "8px",
-                        "width": "100%"
-                    },
-                    img_style={
-                        "width": "100%",        
-                        "aspect-ratio": "1 / 1", 
-                        "object-fit": "cover",
-                        "border-radius": "15%",
-                        "cursor": "pointer"
-                    },
-                    key="click_image"
-                )
-
-                if clicked > -1:
-                    index = filtered_df.index[clicked]
-                    st.session_state.viewing_index = index
-                    st.session_state.editing_index = None
-                    st.session_state.actress_index = index
-                    st.session_state.reset_click = True
-                    show_actress_details()
-                    st.rerun()
-                        
+                if device == 'Device 1':
+                    img_width = 110
+                else:
+                    img_width = 101
+                with st.container(horizontal=True):
+                    for idx in rows_to_display.index:
+                        actress = df.iloc[idx]
+                        with st.container(width=img_width+5):
+                            st.markdown(f"""
+                                <div style="
+                                width: {img_width}px;
+                                height: {img_width}px;
+                                border-radius: 50%;
+                                overflow: hidden;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                margin: 0 auto 8px auto;
+                                background: white;
+                            ">
+                                <img src="{actress['Picture']}" 
+                                    style="
+                                        width: 100%;
+                                        height: 100%;
+                                        object-fit: cover;
+                                    ">
+                            </div>
+                            """, unsafe_allow_html=True)
+                            if st.button(actress['Name (Alphabet)'], width='stretch', type='tertiary', key=f'{actress["Name (Alphabet)"]}_{idx}'):
+                                st.session_state.viewing_index = idx
+                                st.session_state.editing_index = None
+                                st.rerun()
             except Exception as e:
                 st.error(f'Error Generate Image: {e}')
                 st.stop()
         else:
             
-            for i in range(0,len(filtered_df)):
-                index = filtered_df.index[i]
-                review_text = filtered_df['Review'].iloc[i]
-                name = filtered_df["Name (Alphabet)"].iloc[i]
+            for i in range(0,len(rows_to_display)):
+                index = rows_to_display.index[i]
+                review_text = rows_to_display['Review'].iloc[i]
+                name = rows_to_display["Name (Alphabet)"].iloc[i]
 
                 if review_text == 'Not Watched':
                     review_icon = '🔴'
@@ -2471,13 +2526,13 @@ def complex_actress(conn):
                                     {name[:23] + "..." if len(name) > 23 else name}
                                 </div>
                                 <div style="font-size: 0.8rem; color: #d7dae0; margin-top: 0;">
-                                    {filtered_df["Name (Native)"].iloc[i]}
+                                    {rows_to_display["Name (Native)"].iloc[i]}
                                 </div>
                             </div>
                             """, unsafe_allow_html=True)
                         with st.container(horizontal_alignment='right', horizontal=True, width='content'):
-                            st.badge(f"{filtered_df['Review'].iloc[i]}",icon=review_icon, color=review_color)
-                            if filtered_df['Favourite'].iloc[i] == 1:
+                            st.badge(f"{rows_to_display['Review'].iloc[i]}",icon=review_icon, color=review_color)
+                            if rows_to_display['Favourite'].iloc[i] == 1:
                                 st.badge(f"",icon='⭐', color='yellow',width='content')
                     with st.container(horizontal=True,width='content'):
                         st.markdown(f"""
@@ -2491,7 +2546,7 @@ def complex_actress(conn):
                                 align-items: center;
                                 background: white;
                             ">
-                                <img src="{filtered_df['Picture'].iloc[i]}" 
+                                <img src="{rows_to_display['Picture'].iloc[i]}" 
                                     style="
                                         width: 100%;
                                         height: 100%;
@@ -2500,13 +2555,13 @@ def complex_actress(conn):
                             </div>
                         """, unsafe_allow_html=True)
                         with st.container(horizontal=False, width='content'):
-                            if filtered_df['Birthdate'].iloc[i] == '?':
+                            if rows_to_display['Birthdate'].iloc[i] == '?':
                                 st.write('🎂 DoB : ?')
                             else:
-                                st.write(f'🎂 DoB : {datetime.strptime(filtered_df["Birthdate"].iloc[i],"%d/%m/%Y").date().strftime("%b %d, %Y")}')
-                            st.write(f'👧 Age : {filtered_df["Age"].iloc[i]}')
-                            st.write(f'🌍 Country : {filtered_df["Nationality"].iloc[i]}')
-                    if st.button('🔍 View Details', key=f"button_{filtered_df['Name (Alphabet)'].iloc[i]}", width='stretch'):
+                                st.write(f'🎂 DoB : {datetime.strptime(rows_to_display["Birthdate"].iloc[i],"%d/%m/%Y").date().strftime("%b %d, %Y")}')
+                            st.write(f'👧 Age : {rows_to_display["Age"].iloc[i]}')
+                            st.write(f'🌍 Country : {rows_to_display["Nationality"].iloc[i]}')
+                    if st.button('🔍 View Details', key=f"button_{rows_to_display['Name (Alphabet)'].iloc[i]}", width='stretch'):
                         st.session_state.viewing_index = index
                         st.session_state.editing_index = None
                         st.session_state.actress_index = index
@@ -2523,6 +2578,51 @@ def complex_actress(conn):
                         </style>
                     """, unsafe_allow_html=True)
                 st.space('small')
+        
+        st.markdown('---')
+        if total_actress_pages <= 6:
+            with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
+                for i in range(1, total_actress_pages + 1):
+                    if st.button(
+                        str(i),
+                        key=f'page_bottom_{i}',
+                        disabled=(i == st.session_state.actress_page),
+                        on_click=set_page,
+                        args=(i,)
+                    ):
+                        st.session_state.scroll_to_here = True
+                        st.rerun()
+        else:
+            with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
+                if st.button('⬅️',key='previous_bottom', disabled=(st.session_state.actress_page == 1), on_click=set_page, args=(st.session_state.actress_page-1,)):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+                
+                start_page = max(1, st.session_state.actress_page - 1)  
+                end_page = min(total_actress_pages, st.session_state.actress_page + 2)  
+                
+                pages_to_show = range(start_page, end_page + 1)
+                
+                if len(pages_to_show) < 4:
+                    if start_page == 1:
+                        pages_to_show = range(1, min(5, total_actress_pages + 1))
+                    else:
+                        pages_to_show = range(max(1, total_actress_pages - 3), total_actress_pages + 1)
+                
+                for i in pages_to_show:
+                    if st.button(
+                        str(i),
+                        key=f'page_bottom_{i}',
+                        disabled=(i == st.session_state.actress_page),
+                        on_click=set_page,
+                        args=(i,)
+                    ):
+                        st.session_state.scroll_to_here = True
+                        st.rerun()
+                
+                if st.button('➡️',key='next_bottom', disabled=(st.session_state.actress_page == total_actress_pages), on_click=set_page, args=(st.session_state.actress_page+1,)):
+                    st.session_state.scroll_to_here = True    
+                    st.rerun()
                 
     else:
         st.info("No actress data available. Click 'Add New Actress' to get started!")
