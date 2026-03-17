@@ -1505,6 +1505,8 @@ def complex_actress(conn, device):
         st.session_state.film_initial = False
     if 'scroll_to_top' not in st.session_state:
         st.session_state.scroll_to_top = False
+    if 'scroll_to_here' not in st.session_state:
+        st.session_state.scroll_to_here = False
     if 'display_mode' not in st.session_state:
         st.session_state.display_mode = 'List'
     if 'detail_movie_index' not in st.session_state:
