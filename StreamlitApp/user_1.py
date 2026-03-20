@@ -529,6 +529,8 @@ def complex_film(conn, device):
         st.session_state.scroll_to_here = False
     if 'delete_film' not in st.session_state:
         st.session_state.delete_film = False
+    if 'edit_eps' not in st.session_state:
+        st.session_state.edit_eps = False
 
     if st.session_state.scroll_to_top:
         scroll_to_here(0,key='top')  # Scroll to the top of the page
@@ -700,8 +702,15 @@ def complex_film(conn, device):
                 if type_text == 'Movie':
                     st.write('--')
                 else:
-                    st.write(f"{str(film['Current Episode'])}/{str(film['Episode'])}")
-
+                    if st.session_state.edit_eps:
+                        with st.container(horizontal=True, width='content'):
+                            edit_curr_eps = st.number_input('Current', min_value=0, max_value=film['Episode'], value=film['Current Episode'], width=50)
+                            st.write('/')
+                            edit_eps = st.number_input('Total', min_value=0, value=film['Episode'])
+                    with st.container(horizontal=True, width='content'):
+                        st.write(f"{str(film['Current Episode'])}/{str(film['Episode'])}")
+                        if st.button('✏️', type='tertiary'):
+                            st.session_state.edit_eps = True
                 st.markdown('### Playlist')
                 st.info(film['Playlist']) 
 
@@ -1692,14 +1701,15 @@ def complex_actress(conn, device):
                     calculated_age = calculate_age(actress['Birthdate'])
                     if calculated_age:
                         age_text = f"{calculated_age}"
-                
                 if age_text:
                     if age_text == '?':
                         age_text = '?'
                     else:
                         age_text = int(age_text)
                     st.metric("Age", f"{age_text} years")
-
+                else:
+                    st.metric("Age", f"{0} years")
+            
                 # Birthdate
                 if actress['Birthdate'] != '?':
                     birthdate_text = datetime.strptime(str(actress['Birthdate']), '%d/%m/%Y').date().strftime("%b, %d %Y")
@@ -1884,14 +1894,14 @@ def complex_actress(conn, device):
             )
             
             edited_name = st.text_input(
-                "Name (Alphabet)", 
+                "Name (Alphabet)*", 
                 value=actress['Name (Alphabet)'] if pd.notna(actress['Name (Alphabet)']) else "",
                 placeholder="Enter name in alphabet",
                 key=f"name_{index}"
             )
             
             edited_native = st.text_input(
-                "Name (Native)", 
+                "Name (Native)*", 
                 value=actress['Name (Native)'] if pd.notna(actress['Name (Native)']) else "",
                 placeholder="Enter name in native",
                 key=f"native_{index}"
@@ -1958,7 +1968,7 @@ def complex_actress(conn, device):
             
         # Job
         edited_job = st.multiselect(
-            "Job", 
+            "Job*", 
             options=JOB_OPTS,
             default=[j for j in default_jobs if j in JOB_OPTS],
             key=f"notes_{index}"
@@ -2007,82 +2017,90 @@ def complex_actress(conn, device):
 
         # Save changes
         if st.button("💾 Save Changes", width='stretch', type="primary", key=f"save_{index}"):
-            # Generate clean name untuk public_id
-            join_name = edited_name
-            clean_name = re.sub(r'[^\w]', '', join_name)
-            clean_name = "N" + clean_name
-
-            old_filename = str(actress['Picture']).split('/')[-1]
-            old_public_id = old_filename.split('.')[0]
-            final_picture_url = actress['Picture']
-
-            # kalau cuma ganti foto
-            if new_pic and (edited_name == actress['Name (Alphabet)']) and not job_error:
-                if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
-                    try:
-                        delete_cloudinary_image(old_public_id)
-                    except Exception as e:
-                        st.warning(f"Could not delete old image: {e}")
-                        st.stop()
-                
-                final_picture_url = upload_to_database(new_pic, clean_name)
-                if not final_picture_url:
-                    st.error("Failed to upload new image")
+            if edited_name and edited_native and edited_job and not job_error:
+                if edited_native in df['Name (Native)'].values and edited_native != actress['Name (Native)']:
+                    st.warning(f"⚠️ Actress '{edited_native}' already exist in database!")
                     st.stop()
-                    return
-            # kalau ganti foto dan code
-            elif new_pic and (edited_name != actress['Name (Alphabet)']) and not job_error:
-                if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
-                    try:
-                        delete_cloudinary_image(old_public_id)
-                    except Exception as e:
-                        st.warning(f"Could not delete old image: {e}")
+                else:
+                    # Generate clean name untuk public_id
+                    join_name = edited_name
+                    clean_name = re.sub(r'[^\w]', '', join_name)
+                    clean_name = "N" + clean_name
+
+                    old_filename = str(actress['Picture']).split('/')[-1]
+                    old_public_id = old_filename.split('.')[0]
+                    final_picture_url = actress['Picture']
+
+                    # kalau cuma ganti foto
+                    if new_pic and (edited_name == actress['Name (Alphabet)']) and not job_error:
+                        if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
+                            try:
+                                delete_cloudinary_image(old_public_id)
+                            except Exception as e:
+                                st.warning(f"Could not delete old image: {e}")
+                                st.stop()
+                        
+                        final_picture_url = upload_to_database(new_pic, clean_name)
+                        if not final_picture_url:
+                            st.error("Failed to upload new image")
+                            st.stop()
+                            return
+                    # kalau ganti foto dan code
+                    elif new_pic and (edited_name != actress['Name (Alphabet)']) and not job_error:
+                        if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
+                            try:
+                                delete_cloudinary_image(old_public_id)
+                            except Exception as e:
+                                st.warning(f"Could not delete old image: {e}")
+                                st.stop()
+                        
+                        final_picture_url = upload_to_database(new_pic, clean_name)
+                        if not final_picture_url:
+                            st.error("Failed to upload new image")
+                            st.stop()
+                    # kalau cuma ganti code
+                    elif not new_pic and (edited_name != actress['Name (Alphabet)']) and not job_error:
+                        if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
+                            try:
+                                final_picture_url = rename_cloudinary_image(old_public_id, clean_name)
+                            except Exception as e:
+                                st.warning(f'Could not rename old image: {e}')
+                                st.stop()
+                    elif job_error:
+                        st.error('Fill mandatory fields! (*)')
+                        st.write(not job_error)
                         st.stop()
-                
-                final_picture_url = upload_to_database(new_pic, clean_name)
-                if not final_picture_url:
-                    st.error("Failed to upload new image")
-                    st.stop()
-            # kalau cuma ganti code
-            elif not new_pic and (edited_name != actress['Name (Alphabet)']) and not job_error:
-                if pd.notna(actress['Picture']) and actress['Picture'] and "placeholder" not in str(actress['Picture']).lower():
-                    try:
-                        final_picture_url = rename_cloudinary_image(old_public_id, clean_name)
-                    except Exception as e:
-                        st.warning(f'Could not rename old image: {e}')
-                        st.stop()
-            elif job_error:
-                st.error('Fill mandatory fields! (*)')
-                st.write(not job_error)
+
+                    edited_row = [
+                        edited_review,
+                        final_picture_url,
+                        edited_name,
+                        edited_native,
+                        edited_birthdate,
+                        age,
+                        edited_nationality,
+                        edited_height,
+                        edited_jobs,
+                        edited_favourite,
+                        edited_asianwiki,
+                        edited_mdl
+                    ]
+                    
+                    row = index + 2
+                    actress_worksheet().update(f'A{row}:L{row}', [edited_row])
+                    
+                    df.loc[index] = edited_row
+
+                    st.session_state.actress_df = values_handling(df,'actress')  # Update session state
+                    
+                    st.toast("✅ Data edited successfully!")
+                    time.sleep(1)
+
+                    st.session_state.editing_index = None
+                    st.rerun()
+            else:
+                st.error('Fill mandatory fields first! (*)')
                 st.stop()
-
-            edited_row = [
-                edited_review,
-                final_picture_url,
-                edited_name,
-                edited_native,
-                edited_birthdate,
-                age,
-                edited_nationality,
-                edited_height,
-                edited_jobs,
-                edited_favourite,
-                edited_asianwiki,
-                edited_mdl
-            ]
-            
-            row = index + 2
-            actress_worksheet().update(f'A{row}:L{row}', [edited_row])
-            
-            df.loc[index] = edited_row
-
-            st.session_state.actress_df = values_handling(df,'actress')  # Update session state
-            
-            st.toast("✅ Data edited successfully!")
-            time.sleep(1)
-
-            st.session_state.editing_index = None
-            st.rerun()
     
     def delete_actress(index):
         # Hapus data dari DataFrame
@@ -2129,17 +2147,21 @@ def complex_actress(conn, device):
         reset_pic = st.session_state.new_pic_reset        
         
         # Basic Information
-        st.subheader("Basic Information")
-
         new_picture = st.file_uploader("Image", type=['png', 'jpg', 'jpeg', 'webp'], key=f'new_picture_{reset_pic}')
-
-        if not new_picture is None:
+        if new_picture:
             with st.container(horizontal_alignment='center'):
                 st.image(new_picture, width=200)    
-        
+        st.subheader("Basic Information")
         new_asianwiki = st.text_input("AsianWiki", placeholder='Enter AsianWiki....', key='new_asianwiki')
+        if not new_asianwiki:
+            new_asianwiki = '--'
+        
         new_mdl = st.text_input("MDL", placeholder='Enter MDL....', key='new_mdl')
+        if not new_mdl:
+            new_mdl = '--'
+
         new_review = st.selectbox("Review", options=REVIEW_OPTS, key='new_review')
+        
         new_name = st.text_input("Name (Alphabet)*", placeholder="Enter name in alphabet", key='new_name')
         new_native = st.text_input("Name (Native)*", placeholder="Enter name in native", key='new_native')
         new_nationality = st.selectbox("Country", options=COUNTRY_OPTS, key='new_nationality')
@@ -2165,7 +2187,7 @@ def complex_actress(conn, device):
             new_height = str(new_height) + ' cm'
 
         new_job = st.multiselect(
-            "Job", 
+            "Job*", 
             options=JOB_OPTS,
             key=f"new_job"
         )
@@ -2220,7 +2242,7 @@ def complex_actress(conn, device):
             cancel_new = st.button("❌ Cancel", width='stretch')
         
         if submit_new:
-            if new_name and new_native and not job_error:
+            if new_name and new_native and new_job and not job_error:
                 if new_picture:
                     join_name = new_name
                     clean_name = re.sub(r'[^\w]', '', join_name)
