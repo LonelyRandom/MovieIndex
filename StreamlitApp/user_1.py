@@ -12,6 +12,7 @@ from st_clickable_images import clickable_images
 from streamlit_scroll_to_top import scroll_to_here
 import gspread
 from google.oauth2.service_account import Credentials
+import streamlit.components.v1 as components
 import string
 
 # ACTRESS OPTS
@@ -579,6 +580,8 @@ def complex_film(conn, device):
             st.markdown(f"<h2 style='text-align: center;'>{film['Title']}</h2>", unsafe_allow_html=True)
             st.image(film['Picture'], width=200)
         
+            film_trailer = 'https://www.youtube.com/results?search_query=' + '+'.join(film['Title'].lower().split(' ')) + '+trailer'
+            st.link_button('Trailer', film_trailer, type='primary', width=200)
         with st.expander('Synopsis'):
             if pd.notna(film['Synopsis']):
                 text_synopsis = film['Synopsis']
@@ -640,7 +643,39 @@ def complex_film(conn, device):
                         st.session_state.search_text = actress_name
                         st.session_state.set_search = True
                         st.session_state.scroll_to_top = True
-                        st.rerun()  
+                        st.rerun() 
+            if 'No One' in actress_list:
+                with st.container(width=80):
+                    st.markdown(f"""
+                        <div style="
+                            width: 70px;
+                            height: 70px;
+                            border-radius: 50%;
+                            overflow: hidden;
+                            display: flex;
+                            justify-content: center;
+                            align-items: center;
+                            margin: 0 auto 8px auto;
+                            background: white;
+                        ">
+                            <img src="{st.secrets.indicators.PLACEHOLDER_IMG}" 
+                                style="
+                                    width: 100%;
+                                    height: 100%;
+                                    object-fit: cover;
+                                ">
+                        </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Button
+                    if st.button('No One', width='stretch', type='tertiary', 
+                                key=f"no_one", on_click=reset_page):
+                        st.session_state.viewing_film_index = None
+                        st.session_state.editing_film_index = None
+                        st.session_state.search_text = 'No One'
+                        st.session_state.set_search = True
+                        st.session_state.scroll_to_top = True
+                        st.rerun()
         
         info_text = film['Info']
         status_text = film['Status']
@@ -997,13 +1032,13 @@ def complex_film(conn, device):
                         edited_synopsis
                     ]
 
-                    row = index + 2
-                    film_worksheet().update(f'A{row}:N{row}', [edited_row])
 
                     df.loc[index] = edited_row
 
                     st.session_state.film_df = values_handling(df,'film')  # Update session state
                     st.toast("✅ Data edited successfully!")
+                    row = index + 2
+                    film_worksheet().update(f'A{row}:N{row}', [edited_row])
                     time.sleep(1)
 
                     st.session_state.editing_film_index = None
@@ -1037,10 +1072,10 @@ def complex_film(conn, device):
         df.drop(index, inplace=True)
         df.reset_index(drop=True, inplace=True)
 
-        film_worksheet().delete_row(int(index)+2)
         
         st.session_state.film_df = values_handling(df,'film') 
         
+        film_worksheet().delete_row(int(index)+2)
         st.session_state.editing_film_index = None
         st.session_state.viewing_film_index = None
         st.rerun()
@@ -1198,11 +1233,11 @@ def complex_film(conn, device):
                     if new_title in df['Title'].values:
                         errors = f'⚠️ "{new_title}" already exist in database'
                     else:
-                        film_worksheet().append_row(new_row)
                         new_row_df = pd.DataFrame([new_row], columns=df.columns)
                         df = pd.concat([df,new_row_df], ignore_index=True)
                         st.session_state.film_df = values_handling(df,'film')
                         st.toast("✅ Data added successfully!")
+                        film_worksheet().append_row(new_row)
                         time.sleep(1)
                         st.rerun()
                 else:
@@ -1298,21 +1333,18 @@ def complex_film(conn, device):
 
 
                     # Add to DataFrame
-                    new_name_native = new_row['Name (Native)'].iloc[0]
                     df_actress = st.session_state.actress_df
 
-                    if new_name_native in df_actress['Name (Native)'].values:
-                        st.warning(f"⚠️ Actress '{new_name_native}' already exist in database!")
+                    if new_row[3] in df_actress['Name (Native)'].values:
+                        st.warning(f"⚠️ Actress '{new_row[3]}' already exist in database!")
                         st.stop()
                     else:
-                        actress_worksheet().append_row(new_row)
-
-                        new_row_df = pd.DataFrame([new_row], columns=df.columns)
-                        
+                        new_row_df = pd.DataFrame([new_row], columns=actress_df.columns)
                         df_actress = pd.concat([df_actress, new_row_df], ignore_index=True)   
                         df_actress = df_actress.sort_values('Name (Alphabet)', key=lambda col: col.str.lower(), ascending=True, ignore_index=True)
                         # Update ke Google Sheets
                         st.session_state.actress_df = values_handling(df_actress,'actress')  # Update session state
+                        actress_worksheet().append_row(new_row)
                         st.session_state.reset_actress = True
                         st.rerun()
                 else:
@@ -2086,8 +2118,6 @@ def complex_actress(conn, device):
                         edited_mdl
                     ]
                     
-                    row = index + 2
-                    actress_worksheet().update(f'A{row}:L{row}', [edited_row])
                     
                     df.loc[index] = edited_row
 
@@ -2096,6 +2126,8 @@ def complex_actress(conn, device):
                     st.toast("✅ Data edited successfully!")
                     time.sleep(1)
 
+                    row = index + 2
+                    actress_worksheet().update(f'A{row}:L{row}', [edited_row])
                     st.session_state.editing_index = None
                     st.rerun()
             else:
@@ -2114,10 +2146,10 @@ def complex_actress(conn, device):
         df.drop(index, inplace=True)
         df.reset_index(drop=True, inplace=True)
         
-        actress_worksheet().delete_row(int(index)+2)
 
         st.session_state.actress_df = values_handling(df,'actress')  # Update session state
         st.toast("✅ Data deleted successfully!")
+        actress_worksheet().delete_row(int(index)+2)
         time.sleep(1)
         
         st.session_state.editing_index = None
@@ -2275,13 +2307,13 @@ def complex_actress(conn, device):
                     st.warning(f"⚠️ Actress '{new_native}' already exist in database!")
                     st.stop()
                 else:
-                    actress_worksheet().append_row(new_row)
 
                     new_row_df = pd.DataFrame([new_row], columns=df.columns)
                     df = pd.concat([df, new_row_df], ignore_index=True)       
 
                     st.session_state.actress_df = values_handling(df,'actress')  # Update session state
                     st.toast("✅ Data added successfully!")
+                    actress_worksheet().append_row(new_row)
                     time.sleep(1)                    
                     st.session_state.adding_new = False
                     st.rerun()
