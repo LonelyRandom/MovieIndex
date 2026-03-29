@@ -335,6 +335,13 @@ def display_film_grid(df, actress_df, device):
                 if st.button('➡️',key='next_top', disabled=(st.session_state.film_page == total_pages), on_click=set_page, args=(st.session_state.film_page+1,)):
                     st.session_state.scroll_to_here = True
                     st.rerun()
+            with st.container(horizontal=True):
+                if st.button('⏮️ First Page', key='first_top', disabled=(st.session_state.film_page == 1), on_click=set_page, args=(1,), width='stretch'):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+                if st.button('Last Page ⏭️', key='last_top', disabled=(st.session_state.film_page == total_pages), on_click=set_page, args=(total_pages,), width='stretch'):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
 
                 
         
@@ -375,6 +382,7 @@ def display_film_grid(df, actress_df, device):
                                 align-items: center;
                                 margin-bottom: 10px;
                                 border-radius: 5px;
+                                border: 1px solid #374151; 
                             ">
                                 <img src="{film['Picture']}" 
                                     style="
@@ -438,6 +446,13 @@ def display_film_grid(df, actress_df, device):
                 if st.button('➡️',key='next_bottom', disabled=(st.session_state.film_page == total_pages), on_click=set_page, args=(st.session_state.film_page+1,)):
                     st.session_state.scroll_to_here = True   
                     st.rerun()
+            with st.container(horizontal=True):
+                if st.button('⏮️ First Page', key='first_bottom', disabled=(st.session_state.film_page == 1), on_click=set_page, args=(1,), width='stretch'):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+                if st.button('Last Page ⏭️', key='last_bottom', disabled=(st.session_state.film_page == total_pages), on_click=set_page, args=(total_pages,), width='stretch'):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
 
     else:
         st.info('No film match the filter')
@@ -497,7 +512,7 @@ def complex_home(conn):
     <style>
     /* Container dengan key ActressList */
     .st-key-ActressList {
-        background-color: #ffc629; /* Pink soft */
+        background-color: #EC4899;
         padding: 30px 20px 50px 20px;
         border-radius: 10px;
     }
@@ -510,7 +525,7 @@ def complex_home(conn):
                 
     /* Container dengan key FilmList */
     .st-key-FilmList {
-        background-color: #40b3ff; /* Pink soft */
+        background-color: #22D3EE; /* Pink soft */
         padding: 30px 20px 50px 20px;
         border-radius: 10px;
     }
@@ -2473,16 +2488,20 @@ def complex_actress(conn, device):
         if total_actress_pages <= 6:
             with st.container(key='page_button', horizontal=True, horizontal_alignment='center'):
                 for i in range(1, total_actress_pages + 1):
-                    st.button(
+                    if st.button(
                         str(i),
                         key=f'page_top_{i}',
                         disabled=(i == st.session_state.actress_page),
                         on_click=set_page,
                         args=(i,)
-                    )
+                    ):
+                        st.session_state.scroll_to_here = True
+                        st.rerun()
         else:
             with st.container(key='page_button_top', horizontal=True, horizontal_alignment='center'):
-                st.button('⬅️',key='previous_top', disabled=(st.session_state.actress_page == 1), on_click=set_page, args=(st.session_state.actress_page-1,))
+                if st.button('⬅️',key='previous_top', disabled=(st.session_state.actress_page == 1), on_click=set_page, args=(st.session_state.actress_page-1,)):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
                 
                 start_page = max(1, st.session_state.actress_page - 1)  
                 end_page = min(total_actress_pages, st.session_state.actress_page + 2)  
@@ -2496,15 +2515,26 @@ def complex_actress(conn, device):
                         pages_to_show = range(max(1, total_actress_pages - 3), total_actress_pages + 1)
                 
                 for i in pages_to_show:
-                    st.button(
+                    if st.button(
                         str(i),
                         key=f'page_top_{i}',
                         disabled=(i == st.session_state.actress_page),
                         on_click=set_page,
                         args=(i,)
-                    )
+                    ):
+                        st.session_state.scroll_to_here = True
+                        st.rerun()
                 
-                st.button('➡️',key='next_top', disabled=(st.session_state.actress_page == total_actress_pages), on_click=set_page, args=(st.session_state.actress_page+1,))
+                if st.button('➡️',key='next_top', disabled=(st.session_state.actress_page == total_actress_pages), on_click=set_page, args=(st.session_state.actress_page+1,)):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+            with st.container(horizontal=True):
+                if st.button('⏮️ First Page', key='first_top', disabled=(st.session_state.actress_page == 1), on_click=set_page, args=(1,)):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+                if st.button('Last Page ⏭️', key='last_top', disabled=(st.session_state.actress_page == total_actress_pages), on_click=set_page, args=(total_actress_pages,)):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
                 
         
         page = st.session_state.actress_page
@@ -2541,6 +2571,7 @@ def complex_actress(conn, device):
                                 align-items: center;
                                 margin: 0 auto 8px auto;
                                 background: white;
+                                border: 2px solid #374151;
                             ">
                                 <img src="{actress['Picture']}" 
                                     style="
@@ -2678,6 +2709,13 @@ def complex_actress(conn, device):
                 
                 if st.button('➡️',key='next_bottom', disabled=(st.session_state.actress_page == total_actress_pages), on_click=set_page, args=(st.session_state.actress_page+1,)):
                     st.session_state.scroll_to_here = True    
+                    st.rerun()
+            with st.container(horizontal=True):
+                if st.button('⏮️ First Page', key='first_top', disabled=(st.session_state.actress_page == 1), on_click=set_page, args=(1,)):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+                if st.button('Last Page ⏭️', key='last_top', disabled=(st.session_state.actress_page == total_actress_pages), on_click=set_page, args=(total_actress_pages,)):
+                    st.session_state.scroll_to_here = True
                     st.rerun()
                 
     else:
@@ -2933,3 +2971,16 @@ def complex_actress(conn, device):
         }
     </style>
     """, unsafe_allow_html=True)
+
+
+st.markdown("""
+<style>
+    ul[data-testid="stSelectboxVirtualDropdown"] li:nth-child(odd){
+        background-color:#202124 !important;
+    }
+
+    ul[data-testid="stSelectboxVirtualDropdown"] li:nth-child(even){
+        background-color:#2d2f31 !important;
+    }
+</style>
+""", unsafe_allow_html=True)
