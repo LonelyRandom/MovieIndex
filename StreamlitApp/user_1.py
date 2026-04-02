@@ -35,7 +35,8 @@ COUNTRY_OPTS = [
     "Japan",
     "China",
     "Taiwan",
-    "Thailand"
+    "Thailand",
+    "Western"
 ]
 
 # MOVIE OPTS
@@ -1265,7 +1266,7 @@ def complex_film(conn, device):
             st.stop()
             
     with st.sidebar:
-        if st.button('⬅️ Back', width='stretch'):
+        if st.button('⬅️ Back', width='stretch', on_click=reset_page):
             return 'home'
         
         st.markdown('---')
@@ -2589,83 +2590,84 @@ def complex_actress(conn, device):
                 st.error(f'Error Generate Image: {e}')
                 st.stop()
         else:
-            
-            for i in range(0,len(rows_to_display)):
-                index = rows_to_display.index[i]
-                review_text = rows_to_display['Review'].iloc[i]
-                name = rows_to_display["Name (Alphabet)"].iloc[i]
+            with st.container(horizontal=True, horizontal_alignment='center'):
+                for i in range(0,len(rows_to_display)):
+                    index = rows_to_display.index[i]
+                    review_text = rows_to_display['Review'].iloc[i]
+                    name = rows_to_display["Name (Alphabet)"].iloc[i]
 
-                if review_text == 'Not Watched':
-                    review_icon = '🔴'
-                    review_color = 'red'
-                elif review_text == 'Watched':
-                    review_icon = '🟢'
-                    review_color = 'green'
-                else:
-                    review_icon = '⚪'
-                    review_color = 'grey'
-                with st.container(key=f'actress_card_{i}'):
-                    with st.container(horizontal=True, horizontal_alignment='distribute'):
-                        with st.container(width='content'):
+                    if review_text == 'Not Watched':
+                        review_icon = '🔴'
+                        review_color = 'red'
+                    elif review_text == 'Watched':
+                        review_icon = '🟢'
+                        review_color = 'green'
+                    else:
+                        review_icon = '⚪'
+                        review_color = 'grey'
+                    with st.container(key=f'actress_card_{i}', width=570):
+                        with st.container(horizontal=True, horizontal_alignment='distribute'):
+                            with st.container(width='content'):
+                                st.markdown(f"""
+                                <div style="line-height: 1; margin-bottom: 10px;">
+                                    <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">
+                                        {name[:23] + "..." if len(name) > 23 else name}
+                                    </div>
+                                    <div style="font-size: 0.8rem; color: #d7dae0; margin-top: 0;">
+                                        {rows_to_display["Name (Native)"].iloc[i]}
+                                    </div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            with st.container(horizontal_alignment='right', horizontal=True, width='content'):
+                                st.badge(f"{rows_to_display['Review'].iloc[i]}",icon=review_icon, color=review_color)
+                                if rows_to_display['Favourite'].iloc[i] == 1:
+                                    st.badge(f"",icon='⭐', color='yellow',width='content')
+                        with st.container(horizontal=True,width='content'):
                             st.markdown(f"""
-                            <div style="line-height: 1; margin-bottom: 10px;">
-                                <div style="font-size: 1.1rem; font-weight: 600; margin-bottom: 10px;">
-                                    {name[:23] + "..." if len(name) > 23 else name}
+                                <div style="
+                                    width: 120px;
+                                    height: 120px;
+                                    border-radius: 50%;
+                                    overflow: hidden;
+                                    display: flex;
+                                    justify-content: center;
+                                    align-items: center;
+                                    background: white;
+                                    border: 2px solid #374151;    
+                                ">
+                                    <img src="{rows_to_display['Picture'].iloc[i]}" 
+                                        style="
+                                            width: 100%;
+                                            height: 100%;
+                                            object-fit: cover;
+                                        ">
                                 </div>
-                                <div style="font-size: 0.8rem; color: #d7dae0; margin-top: 0;">
-                                    {rows_to_display["Name (Native)"].iloc[i]}
-                                </div>
-                            </div>
                             """, unsafe_allow_html=True)
-                        with st.container(horizontal_alignment='right', horizontal=True, width='content'):
-                            st.badge(f"{rows_to_display['Review'].iloc[i]}",icon=review_icon, color=review_color)
-                            if rows_to_display['Favourite'].iloc[i] == 1:
-                                st.badge(f"",icon='⭐', color='yellow',width='content')
-                    with st.container(horizontal=True,width='content'):
-                        st.markdown(f"""
-                            <div style="
-                                width: 120px;
-                                height: 120px;
-                                border-radius: 50%;
-                                overflow: hidden;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                                background: white;
-                            ">
-                                <img src="{rows_to_display['Picture'].iloc[i]}" 
-                                    style="
-                                        width: 100%;
-                                        height: 100%;
-                                        object-fit: cover;
-                                    ">
-                            </div>
-                        """, unsafe_allow_html=True)
-                        with st.container(horizontal=False, width='content'):
-                            if rows_to_display['Birthdate'].iloc[i] == '?':
-                                st.write('🎂 DoB : ?')
-                            else:
-                                st.write(f'🎂 DoB : {datetime.strptime(rows_to_display["Birthdate"].iloc[i],"%d/%m/%Y").date().strftime("%b %d, %Y")}')
-                            st.write(f'👧 Age : {rows_to_display["Age"].iloc[i]}')
-                            st.write(f'🌍 Country : {rows_to_display["Nationality"].iloc[i]}')
-                    if st.button('🔍 View Details', key=f"button_{rows_to_display['Name (Alphabet)'].iloc[i]}", width='stretch'):
-                        st.session_state.viewing_index = index
-                        st.session_state.editing_index = None
-                        st.session_state.actress_index = index
+                            with st.container(horizontal=False, width='content'):
+                                if rows_to_display['Birthdate'].iloc[i] == '?':
+                                    st.write('🎂 DoB : ?')
+                                else:
+                                    st.write(f'🎂 DoB : {datetime.strptime(rows_to_display["Birthdate"].iloc[i],"%d/%m/%Y").date().strftime("%b %d, %Y")}')
+                                st.write(f'👧 Age : {rows_to_display["Age"].iloc[i]}')
+                                st.write(f'🌍 Country : {rows_to_display["Nationality"].iloc[i]}')
+                        if st.button('🔍 View Details', key=f"button_{rows_to_display['Name (Alphabet)'].iloc[i]}", width='stretch'):
+                            st.session_state.viewing_index = index
+                            st.session_state.editing_index = None
+                            st.session_state.actress_index = index
 
-                        show_actress_details()
-                        st.rerun()
-                    st.markdown(f"""
-                        <style>
-                            .st-key-actress_card_{i}{{
-                                background-color: #1D546D;
-                                padding:10px 10px 1px 10px;
-                                border-radius: 5px;
-                            }}
-                        </style>
-                    """, unsafe_allow_html=True)
-                st.space('small')
-        
+                            show_actress_details()
+                            st.rerun()
+                        st.markdown(f"""
+                            <style>
+                                .st-key-actress_card_{i}{{
+                                    background-color: #1D546D;
+                                    padding:10px 10px 1px 10px;
+                                    border-radius: 5px;
+                                }}
+                            </style>
+                        """, unsafe_allow_html=True)
+                    st.space('small')
+            
         st.markdown('---')
         if total_actress_pages <= 6:
             with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
