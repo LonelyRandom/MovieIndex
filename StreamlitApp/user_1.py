@@ -1382,6 +1382,8 @@ def complex_film(conn, device):
             with st.container(horizontal=True):
                 if st.button('Yes', width='stretch'):
                     st.session_state.log_out_btn = False
+                    st.logout()
+                    st.logout()
                     return 'login'
                 if st.button('No', width='stretch'):
                     st.session_state.log_out_btn = False
@@ -2384,6 +2386,7 @@ def complex_actress(conn, device):
             with st.container(horizontal=True):
                 if st.button('Yes', width='stretch', on_click=reset_page_actress):
                     st.session_state.log_out_btn = False
+                    st.logout()
                     return 'login'
                 if st.button('No', width='stretch'):
                     st.session_state.log_out_btn = False
