@@ -503,6 +503,7 @@ def complex_home(conn):
         with st.container(horizontal=True):
             if st.button('Yes', width='stretch'):
                 st.session_state.log_out_btn = False
+                st.logout()
                 return 'login'
             if st.button('No', width='stretch'):
                 st.session_state.log_out_btn = False
