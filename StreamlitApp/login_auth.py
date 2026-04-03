@@ -3,6 +3,7 @@ import streamlit as st
 
 def log_in_auth(conn):
     st.title("Authentication")
+    st.logout()
 
     if st.button("Authenticate"):
         st.login('google')
