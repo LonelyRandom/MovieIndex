@@ -640,6 +640,7 @@ def complex_film(conn, device):
                             align-items: center;
                             margin: 0 auto 8px auto;
                             background: white;
+                            border: 1px solid #374151;
                         ">
                             <img src="{matching_actresses['Picture'][idx]}" 
                                 style="
@@ -672,6 +673,7 @@ def complex_film(conn, device):
                             align-items: center;
                             margin: 0 auto 8px auto;
                             background: white;
+                            border: 1px solid #374151;
                         ">
                             <img src="{st.secrets.indicators.PLACEHOLDER_IMG}" 
                                 style="
