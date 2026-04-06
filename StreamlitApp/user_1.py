@@ -158,7 +158,7 @@ def format_job_with_groups(jobs, groups):
 
 def load_data_actress(conn):
     try:
-        df = conn.read(worksheet="NList", usecols=list(range(12)))
+        df = conn.read(worksheet="NList", usecols=list(range(13)))
         df = values_handling(df,'actress')
         # df = initial_load(df,'actress')
         return df
@@ -181,11 +181,10 @@ def init_dataframe_actress(conn):
             df = pd.DataFrame(columns=[
                 'Review', 'Picture', 'Name (Alphabet)', 'Name (Native)',
                 'Birthdate', 'Age', 'Nationality', 'Height (cm)', 'Job',
-                'Favourite'
+                'Favourite', 'AsianWiki', 'MDL', 'Gallery'
             ])
         
         st.session_state.actress_df = df
-        st.session_state.data_loaded = True
         return df
     else:
         return st.session_state.actress_df
@@ -202,7 +201,6 @@ def init_dataframe_film(conn):
             ])
         
         st.session_state.film_df = df
-        st.session_state.data_loaded = True
         return df
     else:
         return st.session_state.film_df    
@@ -1639,13 +1637,16 @@ def complex_actress(conn, device):
         scroll_to_here(0,key='top')  # Scroll to the top of the page
         st.session_state.scroll_to_top = False  # Reset the state after scrolling
 
-
     # Inisialisasi DataFrame
     if st.session_state.actress_initial == False:
         df = init_dataframe_actress(conn)
+    else:
+        df = st.session_state.actress_df
     
     if st.session_state.film_initial == False:
         film_df = init_dataframe_film(conn)
+    else:
+        film_df = st.session_state.film_df
 
     # Inisialisasi variabel kontrol
     if "editing_index" not in st.session_state:
@@ -1658,6 +1659,15 @@ def complex_actress(conn, device):
         st.session_state.film_detail = False
     if "check_clicked" not in st.session_state:
         st.session_state.check_clicked = False
+    if "actress_image" not in st.session_state:
+        st.session_state.actress_image = 0
+
+    def reset_pic():
+        st.session_state.actress_image = 0
+    
+    def set_actress_image(pic, total):
+        if pic < total and pic >=0:
+            st.session_state.actress_image = pic
 
     # Fungsi untuk menghitung usia berdasarkan birthdate
     def calculate_age(birthdate_str):
@@ -1846,6 +1856,66 @@ def complex_actress(conn, device):
                 st.markdown(film_card_css, unsafe_allow_html=True)
         else:
             st.info('No Film')
+        
+        st.markdown("---")
+
+        st.markdown("### Gallery")
+        if st.checkbox('Show', on_change=reset_pic):
+            if actress['Gallery'] != 'No Pics' and actress['Gallery'] != '--':
+                if 'actress_image' not in st.session_state:  
+                    st.session_state.actress_image = 0
+                
+                pics = actress['Gallery'].split(', ')
+                count = len(pics)
+
+                st.markdown(
+                    """
+                    <style>
+                    div[data-testid="stVerticalBlock"] { padding-top: 0rem; padding-bottom: 0rem; }
+
+                    .img-fit {
+                        margin-top: -13px; 
+                        padding-top: 0; 
+                        display: flex;             /* gunakan flexbox */
+                        justify-content: center;   /* horizontal center */
+                        align-items: center;       /* vertical center jika container tinggi ditentukan */
+                        background-color: #ffffff;
+                        border-radius: 5px;
+                        margin-bottom: 15px;
+                    }
+
+                    .img-fit img {
+                        max-width: 100%;
+                        height: 400px;
+                        width: auto;
+                        object-fit: contain;
+                        display: none;  /* default hidden semua gambar */
+                    }
+
+                    .img-fit img.active {
+                        display: block; /* hanya gambar active yang terlihat */
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                # HTML untuk semua gambar, preload semuanya
+                img_html = '<div class="img-fit">'
+                for i, pic in enumerate(pics):
+                    active_class = 'active' if i == st.session_state.actress_image else ''
+                    img_html += f'<img src="{pic}" class="{active_class}" id="img_{i}">'
+                img_html += '</div>'
+
+                st.markdown(img_html, unsafe_allow_html=True)
+
+
+                with st.container(horizontal=True):
+                    # Tombol navigasi
+                    st.button('⬅️ Previous', disabled=(st.session_state.actress_image == 0), args=(st.session_state.actress_image - 1, count), on_click=set_actress_image, width='stretch')
+                    st.button('➡️ Next', disabled=(st.session_state.actress_image == count-1), args=(st.session_state.actress_image + 1, count), on_click=set_actress_image, width='stretch')
+            else:
+                st.warning('No Picture Avaiable!')
 
         if st.button("Close", width='stretch', key=f'cancel_{index}', type='primary'):
             st.session_state.viewing_index = None
@@ -1854,7 +1924,7 @@ def complex_actress(conn, device):
 
     def show_edit_mode(index):
         index = st.session_state.editing_index
-        actress = df.iloc[index]
+        actress = st.session_state.actress_df.iloc[index]
         st.space('small')
         st.markdown(f"#### ✏️ Editing: {actress['Name (Alphabet)']}")
         
@@ -2064,8 +2134,106 @@ def complex_actress(conn, device):
         else:
             edited_jobs = format_job_with_groups(edited_job, group_inputs)
             job_error = False
+        
+        st.markdown("---")
+
+        st.markdown("### Gallery")
+        if st.session_state.get('image_reset', False):
+            st.session_state.image_reset = False
+            st.session_state.add_new_img = ''
+
+        error = ''
+        with st.container(horizontal=True, vertical_alignment='bottom'):
+            add_new_image = st.text_input('New Image', placeholder='Insert actress image link...', key='add_new_img')
+            if st.button('Add', width=80):
+                img_list = actress['Gallery']
+                img_new = ''
+
+                if add_new_image:
+                    if img_list == '--':
+                        img_new = add_new_image
+                    else:
+                        img_list = img_list.split(', ')
+                        img_list.append(add_new_image)
+                        st.write(img_list)
+                        img_new = ', '.join(img_list)
+                else:
+                    error = 'Input url first!'
+                st.session_state.actress_df.at[index, 'Gallery'] = img_new
+                st.session_state.image_reset = True
+                st.rerun()
+        if error:
+            st.warning(error)
+
+        if st.checkbox('Show', on_change=reset_pic):
+            if actress['Gallery'] != 'No Pics' and actress['Gallery'] != '--':
+                if 'actress_image' not in st.session_state:  
+                    st.session_state.actress_image = 0
+                
+                pics = actress['Gallery'].split(', ')
+                count = len(pics)
+
+                st.markdown(
+                    """
+                    <style>
+                    div[data-testid="stVerticalBlock"] { padding-top: 0rem; padding-bottom: 0rem; }
+
+                    .img-fit {
+                        margin-top: -13px; 
+                        padding-top: 0; 
+                        display: flex;             /* gunakan flexbox */
+                        justify-content: center;   /* horizontal center */
+                        align-items: center;       /* vertical center jika container tinggi ditentukan */
+                        background-color: #ffffff;
+                        border-radius: 5px;
+                        margin-bottom: 15px;
+                    }
+
+                    .img-fit img {
+                        max-width: 100%;
+                        height: 400px;
+                        width: auto;
+                        object-fit: contain;
+                        display: none;  /* default hidden semua gambar */
+                    }
+
+                    .img-fit img.active {
+                        display: block; /* hanya gambar active yang terlihat */
+                    }
+                    </style>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+                # HTML untuk semua gambar, preload semuanya
+                img_html = '<div class="img-fit">'
+                for i, pic in enumerate(pics):
+                    active_class = 'active' if i == st.session_state.actress_image else ''
+                    img_html += f'<img src="{pic}" class="{active_class}" id="img_{i}">'
+                img_html += '</div>'
+
+                st.markdown(img_html, unsafe_allow_html=True)
 
 
+                with st.container(horizontal=True):
+                    # Tombol navigasi
+                    st.button('⬅️ Previous', disabled=(st.session_state.actress_image == 0), args=(st.session_state.actress_image - 1, count), on_click=set_actress_image, width='stretch')
+                    st.button('➡️ Next', disabled=(st.session_state.actress_image == count-1), args=(st.session_state.actress_image + 1, count), on_click=set_actress_image, width='stretch')
+                if st.button('🗑️ Delete Image', width='stretch'):
+                    new_list = []
+                    pics = actress['Gallery'].split(', ')
+                    for i in range(count):
+                        if i != st.session_state.actress_image:
+                            new_list.append(pics[i])
+                    
+                    img_new = ', '.join(new_list)
+                    if img_new:
+                        st.session_state.actress_df.at[index, 'Gallery'] = img_new
+                    else:
+                        st.session_state.actress_df.at[index, 'Gallery'] = '--'
+                    st.rerun()
+            else:
+                st.warning('No Picture Avaiable!')
         # Save changes
         if st.button("💾 Save Changes", width='stretch', type="primary", key=f"save_{index}"):
             if edited_name and edited_native and edited_job and not job_error:
@@ -2134,7 +2302,8 @@ def complex_actress(conn, device):
                         edited_jobs,
                         edited_favourite,
                         edited_asianwiki,
-                        edited_mdl
+                        edited_mdl,
+                        st.session_state.actress_df.at[index, 'Gallery']
                     ]
                     
                     
@@ -2146,7 +2315,7 @@ def complex_actress(conn, device):
                     time.sleep(1)
 
                     row = index + 2
-                    actress_worksheet().update(f'A{row}:L{row}', [edited_row])
+                    actress_worksheet().update(f'A{row}:M{row}', [edited_row])
                     st.session_state.editing_index = None
                     st.rerun()
             else:
