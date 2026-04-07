@@ -888,9 +888,18 @@ def complex_film(conn, device):
         elif edited_info == 'Complete':
             edited_current_eps = edited_eps
             if film['Rating'] == '?':
-                edited_rating = st.number_input('Rating', min_value=0, max_value=5, step=0.5)
+                edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5)
             else:
                 edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=float(film['Rating']))
+
+            with st.container(key='star_rating'):
+            if film['Rating'] == '?':
+                st.write('☆☆☆☆☆')
+            else:
+                if edited_rating%1.00 == 0:
+                    st.write('★' * int(edited_rating) + '☆' * (5-int(edited_rating)))
+                else:
+                    st.write('★' * int(edited_rating) + '⯪' + '☆' * (5-(int(edited_rating)+1)))
             edited_status = 'Watched'
         elif edited_info == 'Drop':
             edited_current_eps = '?'
@@ -900,15 +909,7 @@ def complex_film(conn, device):
             edited_current_eps = '?'
             edited_rating = '?'
             edited_status = 'Not Watched'
-        
-        with st.container(key='star_rating'):
-            if film['Rating'] == '?':
-                st.write('☆☆☆☆☆')
-            else:
-                if edited_rating%1.00 == 0:
-                    st.write('★' * int(edited_rating) + '☆' * (5-int(edited_rating)))
-                else:
-                    st.write('★' * int(edited_rating) + '⯪' + '☆' * (5-(int(edited_rating)+1)))
+    
             
         edited_playlist = st.selectbox('Playlist', options=PLAYLIST_OPTS, index=playlist_index, key=f'film_playlist_{index}')
         
