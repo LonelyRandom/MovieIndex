@@ -35,6 +35,7 @@ COUNTRY_OPTS = [
     "Japan",
     "China",
     "Taiwan",
+    "Hong Kong"
     "Thailand",
     "Western"
 ]
@@ -66,7 +67,12 @@ GENRE_OPTS = [
     "Live Action",
     "Youth",
     "Mystery",
-    "Sci-Fi"
+    "Sci-Fi",
+    "Death Game",
+    "Documentary",
+    "Historical",
+    "Political/Law",
+    "Sports"
 ]
 
 TYPE_OPTS = [
@@ -754,23 +760,23 @@ def complex_film(conn, device):
                 if type_text == 'Movie':
                     st.write('--')
                 else:
-                    if st.session_state.edit_eps:
-                        with st.container(horizontal=True, width='content'):
-                            edit_curr_eps = st.number_input('Current', min_value=0, max_value=film['Episode'], value=film['Current Episode'], width=50)
-                            st.write('/')
-                            edit_eps = st.number_input('Total', min_value=0, value=film['Episode'])
-                    with st.container(horizontal=True, width='content'):
-                        st.write(f"{str(film['Current Episode'])}/{str(film['Episode'])}")
-                        if st.button('✏️', type='tertiary'):
-                            st.session_state.edit_eps = True
+                    st.write(f"{str(film['Current Episode'])}/{str(film['Episode'])}")
+                        
                 st.markdown('### Playlist')
                 st.info(film['Playlist']) 
 
-        if film['Rating'] == '?':
-            st_star_rating(label='Rating', maxValue = 5, defaultValue = 0, key = "rating", read_only = True)
-        else:
-            st_star_rating(label='Rating', maxValue = 5, defaultValue = int(film['Rating']), key = "rating", read_only = True)
+        st.markdown('## Ratings')
+        with st.container(key='star_rating'):
+            if film['Rating'] == '?':
+                st.write('☆☆☆☆☆')
+            else:
+                if film['Rating']%1 == 0:
+                    st.write('★' * int(film["Rating"]) + '☆' * (5-int(film['Rating'])))
+                else:
+                    st.write('★' * int(film["Rating"]) + '⯪' + '☆' * (5-(int(film['Rating'])+1)))
+                    
         
+
         st.markdown('## Notes')
         st.warning(film['Note'])
 
@@ -882,9 +888,9 @@ def complex_film(conn, device):
         elif edited_info == 'Complete':
             edited_current_eps = edited_eps
             if film['Rating'] == '?':
-                edited_rating = st_star_rating('Rating', maxValue=5, defaultValue=3, key="rating", emoticons=True)
+                edited_rating = st.number_input('Rating', min_value=0, max_value=5, step=0.5)
             else:
-                edited_rating = st_star_rating('Rating', maxValue=5, defaultValue=int(film['Rating']), key="rating", emoticons=True)
+                edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=float(film['Rating']))
             edited_status = 'Watched'
         elif edited_info == 'Drop':
             edited_current_eps = '?'
@@ -894,6 +900,15 @@ def complex_film(conn, device):
             edited_current_eps = '?'
             edited_rating = '?'
             edited_status = 'Not Watched'
+        
+        with st.container(key='star_rating'):
+            if film['Rating'] == '?':
+                st.write('☆☆☆☆☆')
+            else:
+                if edited_rating%1.00 == 0:
+                    st.write('★' * int(edited_rating) + '☆' * (5-int(edited_rating)))
+                else:
+                    st.write('★' * int(edited_rating) + '⯪' + '☆' * (5-(int(edited_rating)+1)))
             
         edited_playlist = st.selectbox('Playlist', options=PLAYLIST_OPTS, index=playlist_index, key=f'film_playlist_{index}')
         
@@ -1438,6 +1453,9 @@ def complex_film(conn, device):
 
     st.markdown("""
     <style>
+    .st-key-star_rating p {
+        font-size: 55px !important;        
+    }
     /* ================= DESKTOP ================= */
     @media (min-width: 768px) {
         section[data-testid="stSidebar"] {
@@ -2151,7 +2169,7 @@ def complex_actress(conn, device):
                 img_list = actress['Gallery']
                 img_new = ''
 
-                if add_new_image:
+                if add_new_image and add_new_image != '':
                     if img_list == '--':
                         img_new = add_new_image
                     else:
@@ -2159,11 +2177,15 @@ def complex_actress(conn, device):
                         img_list.append(add_new_image)
                         st.write(img_list)
                         img_new = ', '.join(img_list)
+                    st.session_state.actress_df.at[index, 'Gallery'] = img_new
+                    st.session_state.image_reset = True
+                    row = index + 2
+                    actress_worksheet().update(f'M{row}', img_new)
+                    st.toast('✅ Image added successfully!')
+                    time.sleep(.5)
+                    st.rerun()
                 else:
                     error = 'Input url first!'
-                st.session_state.actress_df.at[index, 'Gallery'] = img_new
-                st.session_state.image_reset = True
-                st.rerun()
         if error:
             st.warning(error)
 
@@ -2229,10 +2251,16 @@ def complex_actress(conn, device):
                             new_list.append(pics[i])
                     
                     img_new = ', '.join(new_list)
+                    row = index+2
                     if img_new:
                         st.session_state.actress_df.at[index, 'Gallery'] = img_new
+                        actress_worksheet().update(f'M{row}', img_new)
+
                     else:
                         st.session_state.actress_df.at[index, 'Gallery'] = '--'
+                        actress_worksheet().update(f'M{row}', '--')
+                    st.toast('✅ Image deleted successfully!')
+                    time.sleep(.5)
                     st.rerun()
             else:
                 st.warning('No Picture Avaiable!')
