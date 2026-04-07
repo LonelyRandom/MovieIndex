@@ -893,13 +893,13 @@ def complex_film(conn, device):
                 edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=float(film['Rating']))
 
             with st.container(key='star_rating'):
-            if film['Rating'] == '?':
-                st.write('☆☆☆☆☆')
-            else:
-                if edited_rating%1.00 == 0:
-                    st.write('★' * int(edited_rating) + '☆' * (5-int(edited_rating)))
+                if film['Rating'] == '?':
+                    st.write('☆☆☆☆☆')
                 else:
-                    st.write('★' * int(edited_rating) + '⯪' + '☆' * (5-(int(edited_rating)+1)))
+                    if edited_rating%1.00 == 0:
+                        st.write('★' * int(edited_rating) + '☆' * (5-int(edited_rating)))
+                    else:
+                        st.write('★' * int(edited_rating) + '⯪' + '☆' * (5-(int(edited_rating)+1)))
             edited_status = 'Watched'
         elif edited_info == 'Drop':
             edited_current_eps = '?'
