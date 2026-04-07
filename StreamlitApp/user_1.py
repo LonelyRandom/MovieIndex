@@ -1454,7 +1454,7 @@ def complex_film(conn, device):
     st.markdown("""
     <style>
     .st-key-star_rating p {
-        font-size: 55px !important;        
+        font-size: 35px !important;        
     }
     /* ================= DESKTOP ================= */
     @media (min-width: 768px) {
