@@ -1074,7 +1074,6 @@ def complex_film(conn, device):
                     time.sleep(1)
 
                     st.session_state.editing_film_index = None
-                    st.session_state.viewing_film_index = None
                     st.rerun()
                 
 
