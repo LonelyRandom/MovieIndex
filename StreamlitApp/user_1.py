@@ -768,7 +768,7 @@ def complex_film(conn, device):
         st.markdown('## Ratings')
         with st.container(key='star_rating'):
             if film['Rating'] == '?':
-                st.write('☆☆☆☆☆')
+                st.write('🌑🌑🌑🌑🌑')
             else:
                 if film['Rating']%1 == 0:
                     st.write('🌕' * int(film["Rating"]) + '🌑' * (5-int(film['Rating'])))
@@ -888,13 +888,13 @@ def complex_film(conn, device):
         elif edited_info == 'Complete':
             edited_current_eps = edited_eps
             if film['Rating'] == '?':
-                edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5)
+                edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=3.5)
             else:
                 edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=float(film['Rating']))
 
             with st.container(key='star_rating'):
                 if film['Rating'] == '?':
-                    st.write('☆☆☆☆☆')
+                    st.write('🌕🌕🌗🌑🌑')
                 else:
                     if edited_rating%1.00 == 0:
                         st.write('🌕' * int(edited_rating) + '🌑' * (5-int(edited_rating)))
@@ -1180,8 +1180,15 @@ def complex_film(conn, device):
             new_status = 'Watched'
         elif new_info == 'Complete':
             new_current_eps = new_episode
-            new_rating = st_star_rating('Rating', maxValue=5, defaultValue=3, key="new_rating", emoticons=True)
-            new_rating = int(new_rating)
+            new_rating = st.number_input('Rating', min_value = 0.0, max_value = 5.0, value=3.5, key='new_rating')
+            with st.container(key='star_rating'):
+                if film['Rating'] == '?':
+                    st.write('🌕🌕🌗🌑🌑')
+                else:
+                    if edited_rating%1.00 == 0:
+                        st.write('🌕' * int(edited_rating) + '🌑' * (5-int(edited_rating)))
+                    else:
+                        st.write('🌕' * int(edited_rating) + '🌗' + '🌑' * (5-(int(edited_rating)+1)))
             new_status = 'Watched'
         elif new_info == 'Want to Watch':
             new_status = 'Not Watched'
