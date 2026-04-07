@@ -771,9 +771,9 @@ def complex_film(conn, device):
                 st.write('☆☆☆☆☆')
             else:
                 if film['Rating']%1 == 0:
-                    st.write('★' * int(film["Rating"]) + '☆' * (5-int(film['Rating'])))
+                    st.write('🌕' * int(film["Rating"]) + '🌑' * (5-int(film['Rating'])))
                 else:
-                    st.write('★' * int(film["Rating"]) + '⯪' + '☆' * (5-(int(film['Rating'])+1)))
+                    st.write('🌕' * int(film["Rating"]) + '🌗' + '🌑' * (5-(int(film['Rating'])+1)))
                     
         
 
@@ -897,9 +897,9 @@ def complex_film(conn, device):
                     st.write('☆☆☆☆☆')
                 else:
                     if edited_rating%1.00 == 0:
-                        st.write('★' * int(edited_rating) + '☆' * (5-int(edited_rating)))
+                        st.write('🌕' * int(edited_rating) + '🌑' * (5-int(edited_rating)))
                     else:
-                        st.write('★' * int(edited_rating) + '⯪' + '☆' * (5-(int(edited_rating)+1)))
+                        st.write('🌕' * int(edited_rating) + '🌗' + '🌑' * (5-(int(edited_rating)+1)))
             edited_status = 'Watched'
         elif edited_info == 'Drop':
             edited_current_eps = '?'
