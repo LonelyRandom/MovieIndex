@@ -2066,7 +2066,7 @@ def complex_actress(conn, device):
                 "Birthdate",
                 value=birth_date,
                 key=f"birthdate_{index}",
-                min_value=date(1981,1,1)
+                min_value=date(1950,1,1)
             )
             if st.checkbox('No Info', value=(actress['Birthdate'] == '?'), key=f'check_birthdate_{index}'):
                 edited_birthdate = '?'
@@ -2422,7 +2422,7 @@ def complex_actress(conn, device):
         new_name = st.text_input("Name (Alphabet)*", placeholder="Enter name in alphabet", key='new_name')
         new_native = st.text_input("Name (Native)*", placeholder="Enter name in native", key='new_native')
         new_nationality = st.selectbox("Country", options=COUNTRY_OPTS, key='new_nationality')
-        new_birthdate = st.date_input("Birthdate", min_value=date(1980,1,1), key='new_birthdate')
+        new_birthdate = st.date_input("Birthdate", min_value=date(1950,1,1), key='new_birthdate')
 
         if st.checkbox('No Info', key='New Birthdate', value=(new_birthdate is None)):
             new_birthdate = '?'
