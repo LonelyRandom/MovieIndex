@@ -768,12 +768,12 @@ def complex_film(conn, device):
         st.markdown('## Ratings')
         with st.container(key='star_rating'):
             if film['Rating'] == '?':
-                st.write('☆☆☆☆☆')
+                st.write('🌑🌑🌑🌑🌑')
             else:
                 if film['Rating']%1 == 0:
-                    st.write('★' * int(film["Rating"]) + '☆' * (5-int(film['Rating'])))
+                    st.write('🌕' * int(film["Rating"]) + '🌑' * (5-int(film['Rating'])))
                 else:
-                    st.write('★' * int(film["Rating"]) + '⯪' + '☆' * (5-(int(film['Rating'])+1)))
+                    st.write('🌕' * int(film["Rating"]) + '🌗' + '🌑' * (5-(int(film['Rating'])+1)))
                     
         
 
@@ -888,9 +888,18 @@ def complex_film(conn, device):
         elif edited_info == 'Complete':
             edited_current_eps = edited_eps
             if film['Rating'] == '?':
-                edited_rating = st.number_input('Rating', min_value=0, max_value=5, step=0.5)
+                edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=3.5)
             else:
                 edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=float(film['Rating']))
+
+            with st.container(key='star_rating'):
+                if film['Rating'] == '?':
+                    st.write('🌕🌕🌗🌑🌑')
+                else:
+                    if edited_rating%1.00 == 0:
+                        st.write('🌕' * int(edited_rating) + '🌑' * (5-int(edited_rating)))
+                    else:
+                        st.write('🌕' * int(edited_rating) + '🌗' + '🌑' * (5-(int(edited_rating)+1)))
             edited_status = 'Watched'
         elif edited_info == 'Drop':
             edited_current_eps = '?'
@@ -900,15 +909,7 @@ def complex_film(conn, device):
             edited_current_eps = '?'
             edited_rating = '?'
             edited_status = 'Not Watched'
-        
-        with st.container(key='star_rating'):
-            if film['Rating'] == '?':
-                st.write('☆☆☆☆☆')
-            else:
-                if edited_rating%1.00 == 0:
-                    st.write('★' * int(edited_rating) + '☆' * (5-int(edited_rating)))
-                else:
-                    st.write('★' * int(edited_rating) + '⯪' + '☆' * (5-(int(edited_rating)+1)))
+    
             
         edited_playlist = st.selectbox('Playlist', options=PLAYLIST_OPTS, index=playlist_index, key=f'film_playlist_{index}')
         
@@ -1179,8 +1180,15 @@ def complex_film(conn, device):
             new_status = 'Watched'
         elif new_info == 'Complete':
             new_current_eps = new_episode
-            new_rating = st_star_rating('Rating', maxValue=5, defaultValue=3, key="new_rating", emoticons=True)
-            new_rating = int(new_rating)
+            new_rating = st.number_input('Rating', min_value = 0.0, max_value = 5.0, value=3.5, key='new_rating')
+            with st.container(key='star_rating'):
+                if film['Rating'] == '?':
+                    st.write('🌕🌕🌗🌑🌑')
+                else:
+                    if edited_rating%1.00 == 0:
+                        st.write('🌕' * int(edited_rating) + '🌑' * (5-int(edited_rating)))
+                    else:
+                        st.write('🌕' * int(edited_rating) + '🌗' + '🌑' * (5-(int(edited_rating)+1)))
             new_status = 'Watched'
         elif new_info == 'Want to Watch':
             new_status = 'Not Watched'
@@ -1453,7 +1461,7 @@ def complex_film(conn, device):
     st.markdown("""
     <style>
     .st-key-star_rating p {
-        font-size: 55px !important;        
+        font-size: 35px !important;        
     }
     /* ================= DESKTOP ================= */
     @media (min-width: 768px) {
@@ -2058,7 +2066,7 @@ def complex_actress(conn, device):
                 "Birthdate",
                 value=birth_date,
                 key=f"birthdate_{index}",
-                min_value=date(1981,1,1)
+                min_value=date(1950,1,1)
             )
             if st.checkbox('No Info', value=(actress['Birthdate'] == '?'), key=f'check_birthdate_{index}'):
                 edited_birthdate = '?'
@@ -2414,7 +2422,7 @@ def complex_actress(conn, device):
         new_name = st.text_input("Name (Alphabet)*", placeholder="Enter name in alphabet", key='new_name')
         new_native = st.text_input("Name (Native)*", placeholder="Enter name in native", key='new_native')
         new_nationality = st.selectbox("Country", options=COUNTRY_OPTS, key='new_nationality')
-        new_birthdate = st.date_input("Birthdate", min_value=date(1980,1,1), key='new_birthdate')
+        new_birthdate = st.date_input("Birthdate", min_value=date(1950,1,1), key='new_birthdate')
 
         if st.checkbox('No Info', key='New Birthdate', value=(new_birthdate is None)):
             new_birthdate = '?'
