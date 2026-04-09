@@ -374,6 +374,11 @@ def display_film_grid(df, actress_df, device):
                     film = rows_to_display.iloc[i]
                     real_index = rows_to_display.index[i]
 
+                    if film['Status'] == 'Recommended':
+                        title_background_color = 'yellow'
+                    else:
+                        title_background_color = 'gray'
+
                     
                     with st.container(width=device_width):
                         # Tambahkan wrapper dengan fixed height
@@ -402,7 +407,7 @@ def display_film_grid(df, actress_df, device):
                         title = film['Title']
                         if len(title) > 30:
                             title = title[:30] + "..."
-                        if st.button(f':gray-background[{title}]', key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
+                        if st.button(f':{title_background_color}-background[{title}]', key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
                             st.session_state.viewing_film_index = real_index
                             st.rerun()
                             
@@ -1180,15 +1185,12 @@ def complex_film(conn, device):
             new_status = 'Watched'
         elif new_info == 'Complete':
             new_current_eps = new_episode
-            new_rating = st.number_input('Rating', min_value = 0.0, max_value = 5.0, value=3.5, key='new_rating')
+            new_rating = st.number_input('Rating', min_value = 0.0, max_value = 5.0, value=2.5, step=0.5, key='new_rating')
             with st.container(key='star_rating'):
-                if film['Rating'] == '?':
-                    st.write('🌕🌕🌗🌑🌑')
+                if new_rating%1.00 == 0:
+                    st.write('🌕' * int(new_rating) + '🌑' * (5-int(new_rating)))
                 else:
-                    if edited_rating%1.00 == 0:
-                        st.write('🌕' * int(edited_rating) + '🌑' * (5-int(edited_rating)))
-                    else:
-                        st.write('🌕' * int(edited_rating) + '🌗' + '🌑' * (5-(int(edited_rating)+1)))
+                    st.write('🌕' * int(new_rating) + '🌗' + '🌑' * (5-(int(new_rating)+1)))
             new_status = 'Watched'
         elif new_info == 'Want to Watch':
             new_status = 'Not Watched'
