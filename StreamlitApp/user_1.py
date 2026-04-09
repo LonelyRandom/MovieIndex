@@ -402,7 +402,7 @@ def display_film_grid(df, actress_df, device):
                         title = film['Title']
                         if len(title) > 30:
                             title = title[:30] + "..."
-                        if st.button(title, key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
+                        if st.button(f':gray-background[{title}]', key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
                             st.session_state.viewing_film_index = real_index
                             st.rerun()
                             
@@ -1749,18 +1749,18 @@ def complex_actress(conn, device):
                         st.session_state.editing_index = index
                         st.rerun()
                     if actress['AsianWiki'] != '--':
-                        st.link_button("AsianWiki",actress['AsianWiki'], width='stretch')
+                        st.link_button("AsianWiki",actress['AsianWiki'], width='stretch', type='primary')
                     else:
-                        no_link_btn_asian = st.button('AsianWiki', width='stretch')
+                        no_link_btn_asian = st.button('AsianWiki', width='stretch', type='primary')
                 with st.container():
                     if st.button("❌ Close", width='stretch', key=f"close_{index}"):
                         st.session_state.viewing_index = None
                         st.session_state.editing_index = None
                         st.rerun()
                     if actress['MDL'] != '--':
-                        st.link_button("MDL", actress['MDL'], width='stretch')
+                        st.link_button("MDL", actress['MDL'], width='stretch', type='primary')
                     else:
-                        no_link_btn_mdl = st.button('MDL', width='stretch')
+                        no_link_btn_mdl = st.button('MDL', width='stretch', type='primary')
 
             if no_link_btn_asian:
                 st.warning('No link found! (AsianWiki)')
@@ -2513,7 +2513,8 @@ def complex_actress(conn, device):
                     new_jobs,
                     new_favourite,
                     new_asianwiki,
-                    new_mdl
+                    new_mdl,
+                    '--'
                 ]
 
                 # Add to DataFrame
@@ -2784,7 +2785,7 @@ def complex_actress(conn, device):
                                     ">
                             </div>
                             """, unsafe_allow_html=True)
-                            if st.button(actress['Name (Alphabet)'], width='stretch', type='tertiary', key=f'{actress["Name (Alphabet)"]}_{idx}'):
+                            if st.button(f":gray-background[{actress['Name (Alphabet)']}]", width='stretch', type='tertiary', key=f'{actress["Name (Alphabet)"]}_{idx}'):
                                 st.session_state.viewing_index = idx
                                 st.session_state.editing_index = None
                                 st.rerun()
