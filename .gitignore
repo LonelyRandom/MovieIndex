@@ -3,6 +3,7 @@ __pycache__/
 *.pyc
 *.pyo
 coba.py
+scrapping.py
 
 # Virtual environment
 .venv/
