@@ -655,9 +655,9 @@ def complex_film(conn, device):
         else:
             is_center = 'left'
         st.markdown('---')
-        st.markdown("<h3 style='text-align: center; font-size:20px; padding-bottom:0px; margin-bottom:0px;'>Actress</h3>", unsafe_allow_html=True)
 
         if film['Roles'] != 'Unqualified':
+            st.markdown("<h3 style='text-align: center; font-size:20px; padding-bottom:0px; margin-bottom:0px;'>Actress</h3>", unsafe_allow_html=True)
             roles_is_empty = pd.isna(film['Roles']) or film['Roles'] == '--'
             if not roles_is_empty:
                 actress_role_data = []
@@ -726,6 +726,7 @@ def complex_film(conn, device):
                             st.write('**Role Part :** :yellow[(No Info)] Role')
 
         else:
+            st.markdown("<h3 style='text-align: center; font-size:20px; padding-bottom:0px; margin-bottom:10px;'>Actress</h3>", unsafe_allow_html=True)
             with st.container(horizontal=True, horizontal_alignment=is_center):
                 for idx in matching_actresses.index:
                     actress_name = matching_actresses['Name (Alphabet)'][idx]
@@ -894,7 +895,7 @@ def complex_film(conn, device):
         info_m_index = INFO_OPTS_M.index(film['Info']) if film['Info'] in INFO_OPTS_M else 0
         type_index = TYPE_OPTS.index(film['Type']) if film['Type'] in TYPE_OPTS else 0
 
-        tab_edit_film, tab_edit_actress_role = st.tabs(['Film Info', 'Actress Role'])
+        tab_edit_film, tab_edit_actress_role, tab_action_btn = st.tabs(['Film Info', 'Actress Role', 'Action'])
         with tab_edit_film:
         
             with st.container(horizontal_alignment='center'): 
@@ -984,18 +985,15 @@ def complex_film(conn, device):
             elif edited_info == 'Complete':
                 edited_current_eps = edited_eps
                 if film['Rating'] == '?':
-                    edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=3.5)
+                    edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=2.5)
                 else:
                     edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=float(film['Rating']))
 
                 with st.container(key='star_rating'):
-                    if film['Rating'] == '?':
-                        st.write('🌕🌕🌗🌑🌑')
+                    if edited_rating%1.00 == 0:
+                        st.write('🌕' * int(edited_rating) + '🌑' * (5-int(edited_rating)))
                     else:
-                        if edited_rating%1.00 == 0:
-                            st.write('🌕' * int(edited_rating) + '🌑' * (5-int(edited_rating)))
-                        else:
-                            st.write('🌕' * int(edited_rating) + '🌗' + '🌑' * (5-(int(edited_rating)+1)))
+                        st.write('🌕' * int(edited_rating) + '🌗' + '🌑' * (5-(int(edited_rating)+1)))
                 edited_status = 'Watched'
             elif edited_info == 'Drop':
                 edited_current_eps = '?'
@@ -1111,113 +1109,113 @@ def complex_film(conn, device):
                     else:
                         st.warning('⚠️ Fill All The Role Name And Part!')
                         errors = True
-                if not errors:
-                    with st.container(horizontal=True):
-                        if st.button("💾 Save", width='stretch', type="primary", key=f"save_{index}"):
-                            join_code = edited_title
-                            clean_code = re.sub(r'[^\w]', '', join_code)
-                            clean_code = "N" + clean_code
-
-                            old_filename = str(film['Picture']).split('/')[-1]
-                            old_public_id = old_filename.split('.')[0]
-
-                            # kalau cuma ganti foto
-                            if (new_pic and new_pic != '') and (edited_title == film['Title']):
-                                if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
-                                    try:
-                                        if "cloudinary" in film['Picture']:
-                                            delete_cloudinary_image(old_public_id)
-                                    except Exception as e:
-                                        st.warning(f"Could not delete old image: {e}")
-                                        st.stop()
-                                if pic_up == 'Local':
-                                    final_picture_url = upload_to_database(new_pic, clean_code)
-                                    if not final_picture_url:
-                                        st.error("Failed to upload new image")
-                                        st.stop()
-                                else:
-                                    final_picture_url = new_pic
-
-                            # kalau ganti foto dan code
-                            elif (new_pic and new_pic != '')     and (film['Title'] != edited_title):
-                                if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
-                                    try:
-                                        if "cloudinary" in film['Picture']:
-                                            delete_cloudinary_image(old_public_id)  
-                                    except Exception as e:
-                                        st.warning(f"Could not delete old image: {e}")
-                                        st.stop()
-                                if pic_up == 'Local':
-                                    final_picture_url = upload_to_database(new_pic, clean_code)
-                                    if not final_picture_url:
-                                        st.error("Failed to upload new image")
-                                        st.stop()
-                                else:
-                                    final_picture_url = new_pic
-                            # kalau cuma ganti code
-                            elif not new_pic and (film['Title'] != edited_title):
-                                if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
-                                    try:
-                                        if pic_up == 'Local' and "cloudinary" in film['Picture']:
-                                            final_picture_url = rename_cloudinary_image(old_public_id, clean_code)
-                                        else:
-                                            final_picture_url = new_pic
-                                    except Exception as e:
-                                        st.warning(f'Could not rename old image: {e}')
-                                        st.stop()
-                            else:
-                                final_picture_url = film['Picture']
-
-                            if film['Title'] != edited_title and edited_title in df['Title'].values:
-                                st.warning(f'⚠️ Title {edited_title} already exist in database!')
-                            else:
-                                # Update data di DataFrame
-                                edited_row = [
-                                    edited_status,
-                                    edited_info,
-                                    final_picture_url,
-                                    edited_title,
-                                    edited_type,
-                                    edited_current_eps,
-                                    edited_eps,
-                                    edited_genre,
-                                    edited_rating,
-                                    edited_playlist,
-                                    edited_actress,
-                                    edited_note,
-                                    pic_up,
-                                    edited_synopsis,
-                                    edited_roles
-                                ]
-
-
-                                df.loc[index] = edited_row
-
-                                st.session_state.film_df = values_handling(df,'film')  # Update session state
-                                st.toast("✅ Data edited successfully!")
-                                row = index + 2
-                                film_worksheet().update(f'A{row}:O{row}', [edited_row])
-                                time.sleep(1)
-
-                                st.session_state.editing_film_index = None
-                                st.rerun()
-                    if st.session_state.delete_film == False:
-                        if st.button("🗑️ Delete Film", width='stretch', type="secondary", key=f"delete_{index}"):
-                            st.session_state.delete_film = True
-                            st.rerun()
-                    else:
-                        st.warning('Are you sure want to delete this film?')
-                        with st.container(horizontal=True):
-                            if st.button('Yes', width='stretch'):
-                                st.session_state.delete_film = False
-                                delete_film(index)
-                            if st.button('No', width='stretch'):
-                                st.session_state.delete_film = False
-                                st.rerun()
-                            
             else:
                 st.warning('⚠️ Fill Mandatory Fields First! (:red[*])')
                 
+        with tab_action_btn:
+            if not errors:
+                with st.container(horizontal=True):
+                    if st.button("💾 Save", width='stretch', type="primary", key=f"save_{index}"):
+                        join_code = edited_title
+                        clean_code = re.sub(r'[^\w]', '', join_code)
+                        clean_code = "N" + clean_code
+
+                        old_filename = str(film['Picture']).split('/')[-1]
+                        old_public_id = old_filename.split('.')[0]
+
+                        # kalau cuma ganti foto
+                        if (new_pic and new_pic != '') and (edited_title == film['Title']):
+                            if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
+                                try:
+                                    if "cloudinary" in film['Picture']:
+                                        delete_cloudinary_image(old_public_id)
+                                except Exception as e:
+                                    st.warning(f"Could not delete old image: {e}")
+                                    st.stop()
+                            if pic_up == 'Local':
+                                final_picture_url = upload_to_database(new_pic, clean_code)
+                                if not final_picture_url:
+                                    st.error("Failed to upload new image")
+                                    st.stop()
+                            else:
+                                final_picture_url = new_pic
+
+                        # kalau ganti foto dan code
+                        elif (new_pic and new_pic != '')     and (film['Title'] != edited_title):
+                            if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
+                                try:
+                                    if "cloudinary" in film['Picture']:
+                                        delete_cloudinary_image(old_public_id)  
+                                except Exception as e:
+                                    st.warning(f"Could not delete old image: {e}")
+                                    st.stop()
+                            if pic_up == 'Local':
+                                final_picture_url = upload_to_database(new_pic, clean_code)
+                                if not final_picture_url:
+                                    st.error("Failed to upload new image")
+                                    st.stop()
+                            else:
+                                final_picture_url = new_pic
+                        # kalau cuma ganti code
+                        elif not new_pic and (film['Title'] != edited_title):
+                            if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
+                                try:
+                                    if pic_up == 'Local' and "cloudinary" in film['Picture']:
+                                        final_picture_url = rename_cloudinary_image(old_public_id, clean_code)
+                                    else:
+                                        final_picture_url = new_pic
+                                except Exception as e:
+                                    st.warning(f'Could not rename old image: {e}')
+                                    st.stop()
+                        else:
+                            final_picture_url = film['Picture']
+
+                        if film['Title'] != edited_title and edited_title in df['Title'].values:
+                            st.warning(f'⚠️ Title {edited_title} already exist in database!')
+                        else:
+                            # Update data di DataFrame
+                            edited_row = [
+                                edited_status,
+                                edited_info,
+                                final_picture_url,
+                                edited_title,
+                                edited_type,
+                                edited_current_eps,
+                                edited_eps,
+                                edited_genre,
+                                edited_rating,
+                                edited_playlist,
+                                edited_actress,
+                                edited_note,
+                                pic_up,
+                                edited_synopsis,
+                                edited_roles
+                            ]
+
+
+                            df.loc[index] = edited_row
+
+                            st.session_state.film_df = values_handling(df,'film')  # Update session state
+                            st.toast("✅ Data edited successfully!")
+                            row = index + 2
+                            film_worksheet().update(f'A{row}:O{row}', [edited_row])
+                            time.sleep(1)
+
+                            st.session_state.editing_film_index = None
+                            st.rerun()
+                if st.session_state.delete_film == False:
+                    if st.button("🗑️ Delete Film", width='stretch', type="secondary", key=f"delete_{index}"):
+                        st.session_state.delete_film = True
+                        st.rerun()
+                else:
+                    st.warning('Are you sure want to delete this film?')
+                    with st.container(horizontal=True):
+                        if st.button('Yes', width='stretch'):
+                            st.session_state.delete_film = False
+                            delete_film(index)
+                        if st.button('No', width='stretch'):
+                            st.session_state.delete_film = False
+                            st.rerun()
         if st.button('❌ Cancel', width='stretch'):
             st.session_state.editing_film_index = None
             st.rerun()
