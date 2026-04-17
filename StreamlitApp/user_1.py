@@ -186,6 +186,27 @@ def load_data_film(conn):
         return df
     except Exception as e:
         return pd.DataFrame()
+
+def load_data_drama(conn):
+    try:
+        df = conn.read(worksheet="Data Bank Drama", usecols=list(range(7)))
+        return df
+    except Exception as e:
+        return pd.DataFrame()
+
+def load_data_movie(conn):
+    try:
+        df = conn.read(worksheet="Data Bank Movie", usecols=list(range(6)))
+        return df
+    except Exception as e:
+        return pd.DataFrame()
+
+def load_data_tv(conn):
+    try:
+        df = conn.read(worksheet="Data Bank TV Show", usecols=list(range(7)))
+        return df
+    except Exception as e:
+        return pd.DataFrame()
     
 
 def init_dataframe_actress(conn):
@@ -219,6 +240,49 @@ def init_dataframe_film(conn):
         return df
     else:
         return st.session_state.film_df    
+
+def init_dataframe_drama(conn):
+    """Inisialisasi DataFrame di session state"""
+    if "drama_df" not in st.session_state:
+        df = load_data_drama(conn)
+        if df.empty:
+            df = pd.DataFrame(columns=[
+                'Picture', 'Title', 'Episode', 'Actress', 'Role', 'Year', 'Link'
+            ])
+        
+        st.session_state.drama_df = df
+        return df
+    else:
+        return st.session_state.drama_df    
+
+def init_dataframe_movie(conn):
+    """Inisialisasi DataFrame di session state"""
+    if "movie_df" not in st.session_state:
+        df = load_data_movie(conn)
+        if df.empty:
+            df = pd.DataFrame(columns=[
+                'Picture', 'Title', 'Actress', 'Role', 'Year', 'Link'
+            ])
+        
+        st.session_state.movie_df = df
+        return df
+    else:
+        return st.session_state.movie_df    
+
+def init_dataframe_tv(conn):
+    """Inisialisasi DataFrame di session state"""
+    if "tv_df" not in st.session_state:
+        df = load_data_tv(conn)
+        if df.empty:
+            df = pd.DataFrame(columns=[
+                'Picture', 'Title', 'Episode', 'Actress', 'Role', 'Year', 'Link'
+            ])
+        
+        st.session_state.tv_df = df
+        return df
+    else:
+        return st.session_state.tv_df   
+ 
 def reset_page():
     """Reset halaman ke 1"""
     st.session_state.film_page = 1
@@ -226,6 +290,10 @@ def reset_page():
 def reset_page_actress():
     """Reset halaman ke 1"""
     st.session_state.actress_page = 1
+
+def reset_bank_page():
+    """Reset halaman ke 1"""
+    st.session_state.bank_page = 1
 
 
 # --- FUNGSI ALTERNATIF: Grid Layout tanpa Pagination ---
@@ -476,6 +544,228 @@ def display_film_grid(df, actress_df, device):
     else:
         st.info('No film match the filter')
 
+def display_film_bank(actress_df, drama_df, movie_df, tv_df, device):
+    ACTRESS_OPTS = ['No One'] + sorted(
+        actress_df.loc[actress_df['Name (Alphabet)'] != 'No One', 'Name (Alphabet)']
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    if 'bank_page' not in st.session_state:
+        st.session_state.bank_page = 1
+
+    filtered_drama_df = drama_df.copy()
+    filtered_movie_df = movie_df.copy()
+    filtered_tv_df = tv_df.copy()
+
+    selected_actress = st.selectbox('Actress', options=ACTRESS_OPTS, width='stretch', on_change=reset_bank_page, key='bank_actress')
+
+    selected_part = st.radio('Section', options=['Drama', 'Movie', 'TV Show'], horizontal=True, on_change=reset_bank_page, key='bank_section')
+
+    if selected_actress != 'No One':
+        filtered_drama_df = filtered_drama_df[filtered_drama_df['Actress'].str.contains(selected_actress, na=False)]
+        filtered_movie_df = filtered_movie_df[filtered_movie_df['Actress'].str.contains(selected_actress, na=False)]
+        filtered_tv_df = filtered_tv_df[filtered_tv_df['Actress'].str.contains(selected_actress, na=False)]
+    
+
+    if 'img_size' not in st.session_state: # useless
+        st.session_state.img_size = 'Device 1'
+    
+    if device == 'Device 1':
+        device_width = 115
+        device_height = 163
+    else:
+        device_width = 106
+        device_height = 150
+    
+    if selected_part == 'Drama':
+        filtered_df = filtered_drama_df
+    elif selected_part == 'Movie':
+        filtered_df = filtered_movie_df
+    else:
+        filtered_df = filtered_tv_df
+
+    total_pages = max(1, (len(filtered_df) + 30 - 1) // 30)
+
+    def set_bank_page(p):
+        st.session_state.bank_page = p
+    
+    if st.session_state.scroll_to_here:
+        scroll_to_here(0,key='here')  # Scroll to the top of the page
+        st.session_state.scroll_to_here = False
+    st.markdown('---')
+
+    if not filtered_df.empty:
+        st.markdown(
+            f"<div style='text-align:center; font-weight:600;padding-bottom:15px'>Page {st.session_state.film_page}</div>",
+            unsafe_allow_html=True
+        )
+
+        if total_pages <= 6:
+            with st.container(key='page_button', horizontal=True, horizontal_alignment='center'):
+                for i in range(1, total_pages + 1):
+                    if st.button(
+                        str(i),
+                        key=f'page_top_{i}',
+                        disabled=(i == st.session_state.film_page),
+                        on_click=set_bank_page,
+                        args=(i,)
+                    ):
+                        st.session_state.scroll_to_here = True
+                        st.rerun()
+        else:
+            with st.container(key='page_button_top', horizontal=True, horizontal_alignment='center'):
+                if st.button('⬅️',key='previous_top', disabled=(st.session_state.film_page == 1), on_click=set_bank_page, args=(st.session_state.film_page-1,)):
+                    st.session_state.scroll_to_here = True
+                
+                start_page = max(1, st.session_state.bank_page - 1)  
+                end_page = min(total_pages, st.session_state.bank_page + 2)  
+                
+                pages_to_show = range(start_page, end_page + 1)
+                
+                if len(pages_to_show) < 4:
+                    if start_page == 1:
+                        pages_to_show = range(1, min(5, total_pages + 1))
+                    else:
+                        pages_to_show = range(max(1, total_pages - 3), total_pages + 1)
+                
+                for i in pages_to_show:
+                    if st.button(
+                        str(i),
+                        key=f'page_top_{i}',
+                        disabled=(i == st.session_state.bank_page),
+                        on_click=set_bank_page,
+                        args=(i,)
+                    ):
+                        st.session_state.scroll_to_here = True
+                        st.rerun()
+                
+                if st.button('➡️',key='next_top', disabled=(st.session_state.bank_page == total_pages), on_click=set_bank_page, args=(st.session_state.bank_page+1,)):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+            with st.container(horizontal=True):
+                if st.button('⏮️ First Page', key='first_top', disabled=(st.session_state.bank_page == 1), on_click=set_bank_page, args=(1,), width='stretch'):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+                if st.button('Last Page ⏭️', key='last_top', disabled=(st.session_state.bank_page == total_pages), on_click=set_bank_page, args=(total_pages,), width='stretch'):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+
+                
+        
+        page = st.session_state.bank_page
+        
+        start_idx = (page - 1) * 30 
+        end_idx = min(start_idx + 30, len(filtered_df)) 
+        st.markdown("---")
+        st.caption(f"Showing {start_idx+1}-{end_idx} from {len(filtered_df)} films")
+        rows_to_display = filtered_df.iloc[start_idx:end_idx] 
+
+        st.markdown(
+            """
+            <style>
+            button[data-testid="stBaseButton-tertiary"] p {
+                font-size: 13px !important;
+            }
+            </style>
+            """,
+            unsafe_allow_html=True
+        )
+        with st.container(horizontal=True, horizontal_alignment='center'):
+            for i in range(0, len(rows_to_display)): # len = 8 // i = [0,8]
+                if i < len(rows_to_display):
+                    film = rows_to_display.iloc[i]
+                    real_index = rows_to_display.index[i]
+
+                    with st.container(width=device_width):
+                        # Tambahkan wrapper dengan fixed height
+                        st.markdown(f"""
+                            <div style="
+                                height: {device_height}px;  /* Atur tinggi tetap */
+                                width: 100%;
+                                overflow: hidden;
+                                display: flex;
+                                justify-content: center;
+                                align-items: center;
+                                margin-bottom: 10px;
+                                border-radius: 5px;
+                                border: 1px solid #374151; 
+                            ">
+                                <img src="{film['Picture']}" 
+                                    style="
+                                        width: 100%;
+                                        height: 100%;
+                                        object-fit: cover;
+                                        object-position: center;
+                                    ">
+                            </div>
+                        """, unsafe_allow_html=True)
+
+                        title = film['Title']
+                        if len(title) > 30:
+                            title = title[:30] + "..."
+                        if st.button(f':gray-background[{title}]', key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
+                            st.session_state.viewing_film_index = real_index
+                            st.rerun()
+                            
+        st.markdown('---')
+        if total_pages <= 6:
+            with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
+                for i in range(1, total_pages + 1):
+                    if st.button(
+                        str(i),
+                        key=f'page_bottom_{i}',
+                        disabled=(i == st.session_state.bank_page),
+                        on_click=set_bank_page,
+                        args=(i,)
+                    ):
+                        st.session_state.scroll_to_here = True
+                        st.rerun()
+        else:
+            with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
+                if st.button('⬅️',key='previous_bottom', disabled=(st.session_state.bank_page == 1), on_click=set_bank_page, args=(st.session_state.bank_page-1,)):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+
+                
+                start_page = max(1, st.session_state.bank_page - 1)  
+                end_page = min(total_pages, st.session_state.bank_page + 2)  
+                
+                pages_to_show = range(start_page, end_page + 1)
+                
+                if len(pages_to_show) < 4:
+                    if start_page == 1:
+                        pages_to_show = range(1, min(5, total_pages + 1))
+                    else:
+                        pages_to_show = range(max(1, total_pages - 3), total_pages + 1)
+                
+                for i in pages_to_show:
+                    if st.button(
+                        str(i),
+                        key=f'page_bottom_{i}',
+                        disabled=(i == st.session_state.bank_page),
+                        on_click=set_bank_page,
+                        args=(i,)
+                    ):
+                        st.session_state.scroll_to_here = True
+                        st.rerun()
+                
+                if st.button('➡️',key='next_bottom', disabled=(st.session_state.bank_page == total_pages), on_click=set_bank_page, args=(st.session_state.bank_page+1,)):
+                    st.session_state.scroll_to_here = True   
+                    st.rerun()
+            with st.container(horizontal=True):
+                if st.button('⏮️ First Page', key='first_bottom', disabled=(st.session_state.bank_page == 1), on_click=set_bank_page, args=(1,), width='stretch'):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+                if st.button('Last Page ⏭️', key='last_bottom', disabled=(st.session_state.bank_page == total_pages), on_click=set_bank_page, args=(total_pages,), width='stretch'):
+                    st.session_state.scroll_to_here = True
+                    st.rerun()
+
+    else:
+        st.info('No film match the filter')
+
+
 
 def complex_home(conn):
 
@@ -567,6 +857,7 @@ def complex_film(conn, device):
         st.session_state.delete_film = False
     if 'edit_eps' not in st.session_state:
         st.session_state.edit_eps = False
+    
 
     if st.session_state.scroll_to_top:
         scroll_to_here(0,key='top')  # Scroll to the top of the page
@@ -576,10 +867,26 @@ def complex_film(conn, device):
     
     df = st.session_state.film_df
 
+
     if 'actress_df' not in st.session_state:
         st.session_state.actress_df = init_dataframe_actress(conn)
 
     actress_df = st.session_state.actress_df
+
+    if 'drama_df' not in st.session_state:
+        st.session_state.drama_df = init_dataframe_drama(conn)
+
+    drama_df = st.session_state.drama_df
+
+    if 'movie_df' not in st.session_state:
+        st.session_state.movie_df = init_dataframe_movie(conn)
+
+    movie_df = st.session_state.movie_df
+
+    if 'tv_df' not in st.session_state:
+        st.session_state.tv_df = init_dataframe_tv(conn)
+
+    tv_df = st.session_state.tv_df
 
     PLAYLIST_OPTS = ['All'] + sorted(
         df.loc[df['Playlist'] != 'All', 'Playlist']
@@ -1536,7 +1843,9 @@ def complex_film(conn, device):
                     st.warning('Fill mandatory fields (:red[*])')
                     st.rerun()
         st.markdown('---')
-        show_recommend = st.toggle('Recommended', on_change=reset_page)
+        show_recommend = st.toggle('Recommended', on_change=reset_page, key='show_recommend')
+        st.markdown('---')
+        show_display_mode = st.radio('Page', options=['Home', 'Data Bank'], horizontal=True, key='display_radio')
         st.markdown('---')
 
         if st.button('➕ Add New Film', width='stretch'):
@@ -1562,19 +1871,24 @@ def complex_film(conn, device):
     
     # Main
     st.space('small')
-    st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Film List</h1>", unsafe_allow_html=True)
     
     if st.session_state.viewing_film_index is not None:
         show_film_details()
 
-    filtered_df = df.copy()
+    if show_display_mode == 'Home':
+        st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Film List</h1>", unsafe_allow_html=True)
+        filtered_df = df.copy()
 
-    if show_recommend:
-        filtered_df = filtered_df[filtered_df['Status'] == 'Recommended']
-    
-    filtered_df = filtered_df.sort_values(by='Title', ascending=True)
-    
-    display_film_grid(filtered_df, actress_df, device)
+        if show_recommend:
+            filtered_df = filtered_df[filtered_df['Status'] == 'Recommended']
+        
+        filtered_df = filtered_df.sort_values(by='Title', ascending=True)
+        
+        display_film_grid(filtered_df, actress_df, device)
+    else:
+        st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Film Bank</h1>", unsafe_allow_html=True)
+        display_film_bank(actress_df, drama_df, movie_df, tv_df, device)
+
     if st.button('⬆️ Back to top', width='stretch'):
         st.session_state.scroll_to_top = True
         st.rerun()
