@@ -662,7 +662,7 @@ def complex_film(conn, device):
             if not roles_is_empty:
                 actress_role_data = []
                 roles_data = film['Roles']
-                roles_list = roles_data.split('; ')
+                roles_list = roles_data.split(' # ')
                 for actress_data in roles_list:
                     actress_role = actress_data.split(', ')
                     new_row = [
@@ -675,8 +675,7 @@ def complex_film(conn, device):
             for idx in matching_actresses.index:
                 actress_name = matching_actresses['Name (Alphabet)'][idx]
                 container_key = f"{actress_name}_{index}"
-                # Button
-                if st.button(f':gray-background[**{actress_name}**]', width='content', type='tertiary', key=f"{actress_name}_{idx}", on_click=reset_page):
+                if st.button(f':orange-background[**{actress_name}**]', width='content', type='tertiary', key=f"{actress_name}_{idx}", on_click=reset_page):
                     st.session_state.viewing_film_index = None
                     st.session_state.editing_film_index = None
                     st.session_state.search_text = actress_name
@@ -713,12 +712,12 @@ def complex_film(conn, device):
                         if not roles_is_empty:
                             roles = actress_role_df[actress_role_df['Name'] == actress_name].iloc[0]
                             if roles['Role Name'] != '--':
-                                st.write(f'**Role Name :** :orange-background[{roles["Role Name"]}]')
+                                st.write(f'**Role Name :** :gray-background[{roles["Role Name"]}]')
                             else:
                                 st.write('**Role Name :** :yellow[(No Info)]')
                             
                             if roles['Role Part'] != '--':
-                                st.write(f'**Role Part :** :orange-background[{roles["Role Part"]} Role]')
+                                st.write(f'**Role Part :** :gray-background[{roles["Role Part"]} Role]')
                             else:
                                 st.write('**Role Part :** :yellow[(No Info)] Role')
                         else:
@@ -1053,7 +1052,7 @@ def complex_film(conn, device):
                             if not roles_is_empty:
                                 actress_role_data = []
                                 roles_data = film['Roles']
-                                roles_list = roles_data.split('; ')
+                                roles_list = roles_data.split(' # ')
                                 for actress_data in roles_list:
                                     actress_role = actress_data.split(', ')
                                     new_row = [
@@ -1105,7 +1104,7 @@ def complex_film(conn, device):
                         edited_roles = []
                         for act_name, act_role_name, act_role_part in zip(roles_dict['Name'], roles_dict['Role Name'], roles_dict['Role Part']):
                             edited_roles.append(f"{act_name}, {act_role_name}, {act_role_part}")
-                        edited_roles = '; '.join(edited_roles)
+                        edited_roles = ' # '.join(edited_roles)
                     else:
                         st.warning('⚠️ Fill All The Role Name And Part!')
                         errors = True
@@ -1382,7 +1381,7 @@ def complex_film(conn, device):
                         new_roles = []
                         for act_name, act_role_name, act_role_part in zip(roles_dict['Name'], roles_dict['Role Name'], roles_dict['Role Part']):
                             new_roles.append(f"{act_name}, {act_role_name}, {act_role_part}")
-                        new_roles = ' / '.join(new_roles)
+                        new_roles = ' # '.join(new_roles)
                     else:
                         st.warning('⚠️ Fill All The Role Name And Part!')
                         errors = True
