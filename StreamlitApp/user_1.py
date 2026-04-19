@@ -946,9 +946,9 @@ def complex_film(conn, device):
         if not roles_is_empty:
             actress_role_data = []
             roles_data = film['Role']
-            roles_list = roles_data.split(' # ')
+            roles_list = roles_data.split(' ## ')
             for actress_data in roles_list:
-                actress_role = actress_data.split(', ')
+                actress_role = actress_data.split('_ ')
                 new_row = [
                     actress_role[0],
                     actress_role[1],
