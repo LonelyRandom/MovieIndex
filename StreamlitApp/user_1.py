@@ -1498,9 +1498,9 @@ def complex_film(conn, device):
                             if not roles_is_empty:
                                 actress_role_data = []
                                 roles_data = film['Roles']
-                                roles_list = roles_data.split(' # ')
+                                roles_list = roles_data.split(' ## ')
                                 for actress_data in roles_list:
-                                    actress_role = actress_data.split(', ')
+                                    actress_role = actress_data.split('_ ')
                                     new_row = [
                                         actress_role[0],
                                         actress_role[1],
@@ -1549,8 +1549,8 @@ def complex_film(conn, device):
                     if not role_error:
                         edited_roles = []
                         for act_name, act_role_name, act_role_part in zip(roles_dict['Name'], roles_dict['Role Name'], roles_dict['Role Part']):
-                            edited_roles.append(f"{act_name}, {act_role_name}, {act_role_part}")
-                        edited_roles = ' # '.join(edited_roles)
+                            edited_roles.append(f"{act_name}_ {act_role_name}_ {act_role_part}")
+                        edited_roles = ' ## '.join(edited_roles)
                     else:
                         st.warning('⚠️ Fill All The Role Name And Part!')
                         errors = True
