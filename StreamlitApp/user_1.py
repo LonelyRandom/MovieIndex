@@ -90,6 +90,14 @@ ROLE_PART_OPTS = [
     'Guest'
 ]
 
+TV_PART_OPTS = [
+    'Select Role Part',
+    'Main Host',
+    'Host',
+    'Guest',
+    'Regular Member'
+]
+
 @st.cache_resource
 def get_gsheet_client():
     scope = [
@@ -934,7 +942,7 @@ def complex_film(conn, device):
             st.link_button('Film Detail', film['Link'], type='primary', width=200)
         filtered_actress_df = actress_df.copy()
 
-        actress_list = film['Actress'].split(', ')
+        actress_list = film['Actress'].split('_ ')
         matching_actresses = filtered_actress_df[filtered_actress_df['Name (Alphabet)'].isin(actress_list)]
         if len(matching_actresses)>2:
             is_center = 'center'
