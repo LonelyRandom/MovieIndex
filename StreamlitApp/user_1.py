@@ -966,7 +966,7 @@ def complex_film(conn, device):
             actress_role_df = pd.DataFrame(actress_role_data, columns=['Name', 'Role Name', 'Role Part'])
         for idx in matching_actresses.index:
             actress_name = matching_actresses['Name (Alphabet)'][idx]
-            container_key = f"{actress_name}_{index+1}"
+            container_key = f"{actress_name}_{index+1}_photo"
             if st.button(f':orange-background[**{actress_name}**]', width='content', type='tertiary', key=f"{actress_name}_{idx}", on_click=reset_page):
                 st.session_state.viewing_film_index = None
                 st.session_state.editing_film_index = None
