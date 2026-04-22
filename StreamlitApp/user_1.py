@@ -1422,8 +1422,8 @@ def complex_film(conn, device):
                                     """,
                                     unsafe_allow_html=True
                                 )
-                            st.button(':blue-background[➖]', key='edit-eps1', on_click=set_eps, args=(st.session_state.eps - 1, int(film['Episode'])), type='tertiary')
-                            st.button(':blue-background[➕]', key='edit-eps2', on_click=set_eps, args=(st.session_state.eps + 1, int(film['Episode'])), type='tertiary')
+                            st.button(':gray-background[➖]', key='edit-eps1', on_click=set_eps, args=(st.session_state.eps - 1, int(film['Episode'])), type='tertiary')
+                            st.button(':gray-background[➕]', key='edit-eps2', on_click=set_eps, args=(st.session_state.eps + 1, int(film['Episode'])), type='tertiary')
                         
                 st.markdown('### Playlist')
                 st.info(film['Playlist']) 
