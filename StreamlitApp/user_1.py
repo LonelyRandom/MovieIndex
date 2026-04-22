@@ -1122,18 +1122,20 @@ def complex_film(conn, device):
 
     def show_view_film(index):
         film = df.iloc[index]
+        filtered_actress_df = actress_df.copy()
+
+        actress_list = film['Actress Name'].split(', ')
+        matching_actresses = filtered_actress_df[filtered_actress_df['Name (Alphabet)'].isin(actress_list)]
         if film['Roles'] != 'Unqualified':
-            st.markdown(
-                """
+            for act in actress_list:
+                st.markdown(f"""
                 <style>
-                button[data-testid="stBaseButton-tertiary"] p {
+                div[data-testid="stVerticalBlock"]:has(p:contains("{act}")) button p {{
                     font-size: 15px !important;
                     padding-top: 20px !important;
-                    padding-bottom: 0px !important;
-                }
-                """,
-                unsafe_allow_html=True
-            )
+                }}
+                </style>
+                """, unsafe_allow_html=True)
         else:
             st.markdown(
                 """
@@ -1158,10 +1160,6 @@ def complex_film(conn, device):
             else:
                 text_synopsis = '⚠️ Synopsis not found!'
             st.write(text_synopsis)
-        filtered_actress_df = actress_df.copy()
-
-        actress_list = film['Actress Name'].split(', ')
-        matching_actresses = filtered_actress_df[filtered_actress_df['Name (Alphabet)'].isin(actress_list)]
         if len(matching_actresses)>2:
             is_center = 'center'
         else:
@@ -1399,7 +1397,7 @@ def complex_film(conn, device):
                                     unsafe_allow_html=True
                                 )
                             if film['Info'] != 'Complete':
-                                if st.button('✏️', key='edit-eps'):
+                                if st.button('✏️', key='edit-eps', type='tertiary'):
                                     if film['Current Episode'] == '?':
                                         eps = 1
                                         st.session_state.info = 'watched'
@@ -1424,54 +1422,54 @@ def complex_film(conn, device):
                                     """,
                                     unsafe_allow_html=True
                                 )
-                            st.button('➖', key='edit-eps1', on_click=set_eps, args=(st.session_state.eps - 1, int(film['Episode'])))
-                            st.button('➕', key='edit-eps2', on_click=set_eps, args=(st.session_state.eps + 1, int(film['Episode'])))
+                            st.button(':blue-background[➖]', key='edit-eps1', on_click=set_eps, args=(st.session_state.eps - 1, int(film['Episode'])), type='tertiary')
+                            st.button(':blue-background[➕]', key='edit-eps2', on_click=set_eps, args=(st.session_state.eps + 1, int(film['Episode'])), type='tertiary')
                         
                 st.markdown('### Playlist')
                 st.info(film['Playlist']) 
-            if st.session_state.edit_eps and st.session_state.info != 'complete':    
-                with st.container(horizontal=True):
-                    save_edited = st.button('✅', width='stretch', key='save_edited_eps')
-                            
-                    if st.button('❌', width='stretch', key='cancel_edited_eps'):
-                        st.session_state.edit_eps = False
-                        st.session_state.info = None
-                        st.session_state.rec = False
-                        st.rerun()
+        if st.session_state.edit_eps and st.session_state.info != 'complete':    
+            with st.container(horizontal=True):
+                save_edited = st.button('✅', width='stretch', key='save_edited_eps')
+                        
+                if st.button('❌', width='stretch', key='cancel_edited_eps'):
+                    st.session_state.edit_eps = False
+                    st.session_state.info = None
+                    st.session_state.rec = False
+                    st.rerun()
+                
+            if save_edited:
+                row = index+2
+                cells = [
+                    {"range": f"A{row}", "values": [["Watched"]]},
+                    {"range": f"B{row}", "values": [["On Going"]]},
+                    {"range": f"F{row}", "values": [[st.session_state.eps]]}
+                ]
+
+                if film_worksheet().batch_update(cells):
+                    df.at[index, 'Status'] = 'Watched'
+                    df.at[index, 'Info'] = 'On Going'
+                    df.at[index, 'Current Episode'] = st.session_state.eps
                     
-                if save_edited:
-                    row = index+2
-                    cells = [
-                        {"range": f"A{row}", "values": [["Watched"]]},
-                        {"range": f"B{row}", "values": [["On Going"]]},
-                        {"range": f"F{row}", "values": [[st.session_state.eps]]}
-                    ]
-
-                    if film_worksheet().batch_update(cells):
-                        df.at[index, 'Status'] = 'Watched'
-                        df.at[index, 'Info'] = 'On Going'
-                        df.at[index, 'Current Episode'] = st.session_state.eps
-                        
-                        st.session_state.film_df = values_handling(df,'film')  # Update session state
-                        
-                        st.toast('✅ Episode Updated!')
-                        time.sleep(1)
-                        st.session_state.edit_eps = False
-                        st.session_state.info = None
-                        st.session_state.rec = False
-                        st.rerun()
+                    st.session_state.film_df = values_handling(df,'film')  # Update session state
+                    
+                    st.toast('✅ Episode Updated!')
+                    time.sleep(1)
+                    st.session_state.edit_eps = False
+                    st.session_state.info = None
+                    st.session_state.rec = False
+                    st.rerun()
 
 
-                if st.session_state.info == 'complete':
-                    if film['Status'] == 'Recommended':
-                        rec_value = True
-                    else:
-                        rec_value = False
-                    if st.checkbox('Recommended', value=rec_value, on_change=set_rec, key='rec_eps'):
-                        edited_status = 'Recommended'
-                else: 
-                    edited_status = 'Watched'
-        
+            if st.session_state.info == 'complete':
+                if film['Status'] == 'Recommended':
+                    rec_value = True
+                else:
+                    rec_value = False
+                if st.checkbox('Recommended', value=rec_value, on_change=set_rec, key='rec_eps'):
+                    edited_status = 'Recommended'
+            else: 
+                edited_status = 'Watched'
+    
         st.markdown('---')
         st.markdown('## Ratings')
         if st.session_state.info != 'complete':
