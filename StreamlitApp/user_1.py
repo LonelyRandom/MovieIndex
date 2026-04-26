@@ -1875,13 +1875,14 @@ def complex_film(conn, device):
             #     other_cast_cameo = []
             #     for cast in other_casts:
             #         cast_data = cast.split('_ ')
-            #         cast_name = cast_data[0]
+            #         cast_link = cast_data[0]
             #         cast_role = cast_data[1]
             #         cast_part = cast_data[2]
+            #         cast_data = cast_df[cast_df['Link'] == cast_link]
+            #         cast_name = cast_data['Name'].iloc[0]
             #         if cast_name not in actress_list:
-            #             cast_img = cast_df[cast_df['Name'] == cast_name]
+            #             cast_img = cast_df[cast_df['Link'] == cast_link]
             #             cast_pic = cast_img['Picture']
-            #             st.write(cast_pic)
             #             if cast_part.lower() == 'main role':
             #                 other_cast_main.append({
             #                     'Picture' : cast_pic,
@@ -2384,9 +2385,13 @@ def complex_film(conn, device):
                                 edited_note,
                                 pic_up,
                                 edited_synopsis,
-                                edited_roles
+                                edited_roles,
+                                film['Year'],
+                                film['Aired'],
+                                film['Cast'],
+                                film['Cast Name'],
+                                film['Link']
                             ]
-
 
                             df.loc[index] = edited_row
 
