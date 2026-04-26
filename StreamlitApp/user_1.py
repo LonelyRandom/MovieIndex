@@ -1102,7 +1102,7 @@ def complex_film(conn, device):
                 with st.container(horizontal=True, horizontal_alignment=is_center):
                     for idx in matching_actresses.index:
                         actress_name = matching_actresses['Name (Given)'][idx]
-                        container_key = f"{actress_name}_{index}"
+                        container_key = f"container_{actress_name}_{index}"
                         with st.container(width=80, key=container_key):
                             # Display image as circle using HTML
                             st.markdown(f"""
@@ -2482,7 +2482,7 @@ def complex_film(conn, device):
             selected_actress = st.multiselect('Actress:red[*]', key='new_actresses', options=ACTRESS_OPTS)
 
             if selected_actress:
-                new_actress = ", ".join(selected_actress)
+                new_actress = "_ ".join(selected_actress)
             else:
                 new_actress = '?'
 
@@ -2576,8 +2576,8 @@ def complex_film(conn, device):
                     if not role_error:
                         new_roles = []
                         for act_name, act_role_name, act_role_part in zip(roles_dict['Name'], roles_dict['Role Name'], roles_dict['Role Part']):
-                            new_roles.append(f"{act_name}, {act_role_name}, {act_role_part}")
-                        new_roles = ' # '.join(new_roles)
+                            new_roles.append(f"{act_name}_ {act_role_name}_ {act_role_part}")
+                        new_roles = ' ## '.join(new_roles)
                     else:
                         st.warning('⚠️ Fill All The Role Name And Part!')
                         errors = True
@@ -2610,7 +2610,12 @@ def complex_film(conn, device):
                                 new_note,
                                 pic_up,
                                 new_synopsis,
-                                new_roles
+                                new_roles,
+                                '--',
+                                '--',
+                                '--',
+                                '--',
+                                '--'
                             ]
 
                             df = st.session_state.film_df
