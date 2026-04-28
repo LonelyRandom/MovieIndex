@@ -2142,21 +2142,22 @@ def complex_film(conn, device):
             
             if film['Cast'] != '--':
                 actress_list = [
-                    j.strip() for j in film['Cast'].split(',')
+                    j.strip() for j in film['Cast'].split('_ ')
                     if j.strip() in ACTRESS_OPTS
                 ]
             else:
                 actress_list = [
-                    j.strip() for j in film['Actress Name'].split(',')
+                    j.strip() for j in film['Actress Name'].split('_ ')
                     if j.strip() in ACTRESS_OPTS
                 ]
+
             selected_actress = st.multiselect(
                 'Actress', 
                 options = ACTRESS_OPTS, 
                 default = actress_list
             )
 
-            edited_actress = ", ".join(selected_actress)
+            edited_actress = "_ ".join(selected_actress)
 
             selected_genre = st.multiselect(
                 'Genre', 
@@ -2255,25 +2256,41 @@ def complex_film(conn, device):
                     role_error = False
                     actress_df = st.session_state.actress_df.copy()
                     selected_actress_data = actress_df[actress_df['Name (Stage)'].isin(selected_actress)]
+                    st.write(selected_actress_data)
+                    if film['Roles'] != 'Unqualified':
+                        roles_is_empty = pd.isna(film['Roles']) or film['Roles'] == '--'
+                        if not roles_is_empty:
+                            actress_role_data = []
+                            roles_data = film['Roles']
+                            roles_list = roles_data.split(' ## ')
+                            for actress_data in roles_list:
+                                actress_role = actress_data.split('_ ')
+                                new_row = [
+                                    actress_role[0],
+                                    actress_role[1],
+                                    actress_role[2]
+                                ]
+                                actress_role_data.append(new_row)
+                            
+                            actress_role_df = pd.DataFrame(actress_role_data, columns=['Name', 'Role Name', 'Role Part'])
+
+                            for select_act in selected_actress_data['Name (Stage)'].values:
+                                if select_act not in actress_role_df['Name'].values:
+                                    new_row = [{
+                                        'Name' : select_act,
+                                        'Role Name' : '--',
+                                        'Role Part' : '--'
+                                    }]
+                                    new_df = pd.DataFrame(new_row)
+
+                                    final_df = pd.concat([actress_role_df, new_df], ignore_index=True)
+                                    actress_role_df = final_df
+
+                        else:
+                            actress_role_df = pd.DataFrame(columns=['Name', 'Role Name', 'Role Part'])
+
                     for idx in selected_actress_data.index:
                         data = selected_actress_data.loc[idx]
-                        if film['Roles'] != 'TV Show':
-                            roles_is_empty = pd.isna(film['Roles']) or film['Roles'] == '--'
-                            if not roles_is_empty:
-                                actress_role_data = []
-                                roles_data = film['Roles']
-                                roles_list = roles_data.split(' ## ')
-                                for actress_data in roles_list:
-                                    actress_role = actress_data.split('_ ')
-                                    new_row = [
-                                        actress_role[0],
-                                        actress_role[1],
-                                        actress_role[2]
-                                    ]
-                                    actress_role_data.append(new_row)
-                                actress_role_df = pd.DataFrame(actress_role_data, columns=['Name', 'Role Name', 'Role Part'])
-                            else:
-                                actress_role_df = pd.DataFrame(columns=['Name', 'Role Name', 'Role Part'])
 
                         if data['Name (Stage)'] in actress_role_df['Name'].to_list():
                             role_data = actress_role_df[actress_role_df['Name'] == data['Name (Stage)']].iloc[0]
@@ -2414,7 +2431,7 @@ def complex_film(conn, device):
                             st.session_state.film_df = values_handling(df,'film')  # Update session state
                             st.toast("✅ Data edited successfully!")
                             row = index + 2
-                            film_worksheet().update(f'A{row}:O{row}', [edited_row])
+                            film_worksheet().update(f'A{row}:T{row}', [edited_row])
                             time.sleep(1)
 
                             st.session_state.editing_film_index = None
