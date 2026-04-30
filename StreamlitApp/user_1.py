@@ -1494,6 +1494,7 @@ def complex_film(conn, device):
                         for actress_data in cast_list:
                             actress_role = actress_data.split('_ ')
                             st.write(actress_role[0])
+                            st.write(actress_data)
                             actress_name = cast_df.loc[cast_df['Link'] == actress_role[0], 'Target Name'].iloc[0]
                             if actress_name == '--':
                                 actress_name = cast_df.loc[cast_df['Link'] == actress_role[0], 'Name'].iloc[0]
