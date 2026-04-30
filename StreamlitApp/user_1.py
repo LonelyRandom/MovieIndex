@@ -1491,6 +1491,7 @@ def complex_film(conn, device):
                     if film['Cast Name'] != '--':
                         cast_data = film['Cast Name']
                         cast_list = cast_data.split(' ## ')
+                        st.write(cast_list)
                         for actress_data in cast_list:
                             actress_role = actress_data.split('_ ')
                             st.write(actress_role[0])
