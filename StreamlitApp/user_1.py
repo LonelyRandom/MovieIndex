@@ -2906,13 +2906,13 @@ def complex_film(conn, device):
         scrap_part = st.radio("Scrap Part", options=["Film", "Cast"], horizontal=True)
         scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
         file = st.file_uploader("Upload HTML", type=["html", "txt"])
-        cast_result = []
+        cast_results = []
         st.markdown('---')
         show_scrap = st.button("Show", width='stretch')
         st.markdown('---')
         if show_scrap:
             if scrap_part == "Cast":
-                st.write(cast_result)
+                st.write(cast_results)
         if file is not None:
             html_text = file.read().decode("utf-8")
             soup = BeautifulSoup(html_text, "html.parser")
