@@ -2925,10 +2925,12 @@ def complex_film(conn, device):
         st.markdown('---')
         if show_scrap:
             if scrap_part == "Cast":
-                cast_scrap_df = pd.DataFrame(cast_results)
-                new_actress_df = pd.DataFrame(new_actress_results)
-                st.write(cast_scrap_df)
-                st.write(new_actress_df)
+                if cast_results:
+                    cast_scrap_df = pd.DataFrame(cast_results)
+                    st.write(cast_scrap_df)
+                if new_actress_results:
+                    new_actress_df = pd.DataFrame(new_actress_results)
+                    st.write(new_actress_df)
 
         if save_scrap:
             st.write("save scrap")
