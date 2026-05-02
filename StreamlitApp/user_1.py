@@ -2912,16 +2912,26 @@ def complex_film(conn, device):
             st.session_state.cast_results = []
         if "film_results" not in st.session_state:
             st.session_state.film_results = []
+        if "new_actres_results" not in se.session_state:
+            st.session_state.new_actress_results = []
 
         cast_results = st.session_state.cast_results
+        cast_df = st.session_state.cast_df
+        
         st.markdown('---')
-        show_scrap = st.button("Show", width='stretch')
+        with st.container(horizontal=True):   
+            show_scrap = st.button("Show", width='stretch')
+            save_scrap = st.button("Save", width='stretch')
         st.markdown('---')
         if show_scrap:
             if scrap_part == "Cast":
                 cast_scrap_df = pd.DataFrame(cast_results)
+                new_actress_df = pd.DataFrame(new_actress_results)
                 st.write(cast_scrap_df)
-                st.write(st.session_state.cast_df)
+                st.write(new_actress_df)
+
+        if save_scrap:
+            st.write("save scrap")
         if file is not None:
             html_text = file.read().decode("utf-8")
             soup = BeautifulSoup(html_text, "html.parser")
@@ -2936,7 +2946,7 @@ def complex_film(conn, device):
                         for item in ul.find_all("li"):
                             name_tag = item.select_one("div.p-a-0 > a.text-primary")
                             name = name_tag.get_text(strip=True) if name_tag else "-"
-                            profile_link = name_tag["href"]
+                            profile_link = "https://mydramalist.com" + name_tag["href"]
 
                             img = item.select_one("img")["src"]
  
@@ -2960,12 +2970,18 @@ def complex_film(conn, device):
                             st.write(role_part)
 
                             cast_results.append({
-                                "name": name,
-                                "link": "https://mydramalist.com" + profile_link,
-                                "character": character,
-                                "role": role_part,
-                                "img": img.replace("s.jpg","c.jpg") 
+                                "Name": profile_link,
+                                "Role": character,
+                                "Part": role_part 
                             })
+
+                            if profile_link not in cast_df['Link'].values:
+                                new_actress_results.append({
+                                    "Name" : name,
+                                    "Picture" : img.replace("s.jpg","c.jpg"),
+                                    "Target Name" : "--",
+                                    "Link" : profile_link
+                                })
             else:
                 st.write("scrap film")
 
