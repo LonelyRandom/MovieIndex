@@ -2907,8 +2907,9 @@ def complex_film(conn, device):
         if scrap_part == "Film":
             scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
             
-        # file = st.file_uploader("Upload HTML", type=["html", "txt"])
-        file = st.text_area("Coba aja")
+        file = st.text_area("HTML TEXT", placeholder="Paste your html here...")
+        target = st.selectbox('Film Target', options=TITLE_OPTS, width='stretch')
+        
         if "cast_results" not in st.session_state:
             st.session_state.cast_results = []
         if "film_results" not in st.session_state:
@@ -2923,7 +2924,10 @@ def complex_film(conn, device):
         st.markdown('---')
         with st.container(horizontal=True):   
             show_scrap = st.button("Show", width='stretch')
-            save_scrap = st.button("Save", width='stretch')
+            save_scrap = st.button("Save", width='stretch', type='primary')
+        if st.button("Clear", width='stretch'):
+            cast_results = []
+            new_actress_results = []
         st.markdown('---')
         if show_scrap:
             if scrap_part == "Cast":
@@ -2935,11 +2939,20 @@ def complex_film(conn, device):
                     st.write(new_actress_df)
 
         if save_scrap:
-            st.write("save scrap")
+            if scrap_part == "Cast":
+                for i in range(len(cast_results)):
+                    cast_text = '_ '.join(cast_results[i]["Name"])
+                    cast_name_text = ' ## '.join(f"{cast_results[i]['Link']}_ {cast_results[i]['Role']}_ {cast_results[i]['Part']}")
+
+                st.write(cast_text)
+                st.write(cast_name_text)
         if file is not None:
-            # html_text = file.read().decode("utf-8")
             soup = BeautifulSoup(file, "html.parser")
 
+            title = soup.select_one("h1.film-title").get_text(strip=True)
+
+            st.subheader(title)
+            
             if scrap_part == "Cast":
                 headers = soup.find_all("h3")
 
@@ -2974,7 +2987,8 @@ def complex_film(conn, device):
                             st.write(role_part)
 
                             cast_results.append({
-                                "Name": profile_link,
+                                "Name": name,
+                                "Link": profile_link,
                                 "Role": character,
                                 "Part": role_part 
                             })
