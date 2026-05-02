@@ -2906,54 +2906,58 @@ def complex_film(conn, device):
         scrap_part = st.radio("Scrap Part", options=["Film", "Cast"], horizontal=True)
         scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
         file = st.file_uploader("Upload HTML", type=["html", "txt"])
-
+        cast_result = []
+        st.markdown('---')
+        show_scrap = st.button("Show", width='stretch')
+        st.markdown('---')
+        if show_scrap:
+            if scrap_part == "Cast":
+                st.write(cast_result)
         if file is not None:
             html_text = file.read().decode("utf-8")
             soup = BeautifulSoup(html_text, "html.parser")
-        
-            headers = soup.find_all("h3")
 
-            results = []
+            if scrap_part == "Cast":
+                headers = soup.find_all("h3")
 
-            for h3 in headers:
-                if h3.get_text(strip=True) in ["Guest Role", "Support Role", "Main Role"]:
-                    ul = h3.find_next("ul")
+                for h3 in headers:
+                    if h3.get_text(strip=True) in ["Guest Role", "Support Role", "Main Role"]:
+                        ul = h3.find_next("ul")
 
-                    for item in ul.find_all("li"):
-                        name_tag = item.select_one("div.p-a-0 > a.text-primary")
-                        name = name_tag.get_text(strip=True) if name_tag else "-"
-                        profile_link = name_tag["href"]
+                        for item in ul.find_all("li"):
+                            name_tag = item.select_one("div.p-a-0 > a.text-primary")
+                            name = name_tag.get_text(strip=True) if name_tag else "-"
+                            profile_link = name_tag["href"]
 
-                        img = item.select_one("img")["src"]
+                            img = item.select_one("img")["src"]
  
-                        small_tag = item.select_one("small")
-                        a_tag = small_tag.find("a") if small_tag else None
-
-                        character = (
-                            a_tag["title"] if a_tag and a_tag.has_attr("title")
-                            else small_tag["title"] if small_tag and small_tag.has_attr("title")
-                            else "-"
-                        )
+                            small_tag = item.select_one("small")
+                            a_tag = small_tag.find("a") if small_tag else None
   
-                        role = item.select_one("small.text-muted")
-                        role_part = role.get_text(strip=True) if role else "-"
+                            character = (
+                                a_tag["title"] if a_tag and a_tag.has_attr("title")
+                                else small_tag["title"] if small_tag and small_tag.has_attr("title")
+                                else "-"
+                            )
+    
+                            role = item.select_one("small.text-muted")
+                            role_part = role.get_text(strip=True) if role else "-"
 
-                        st.markdown('---')
-                        st.write(name)
-                        st.write(profile_link)
-                        st.image(img, width=80)
-                        st.write(character)
-                        st.write(role_part)
+                            st.markdown('---')
+                            st.write(name)
+                            st.write(profile_link)
+                            st.image(img, width=80)
+                            st.write(character)
+                            st.write(role_part)
 
-                        results.append({
-                            "name": name,
-                            "link": "https://mydramalist.com/" + profile_link,
-                            "character": character,
-                            "role": role,
-                            "img": img 
-                        })
+                            cast_results.append({
+                                "name": name,
+                                "link": "https://mydramalist.com" + profile_link,
+                                "character": character,
+                                "role": role_part,
+                                "img": img.replace("s.jpg","c.jpg") 
+                            })
 
-                    st.write(results)
 
     if st.button('⬆️ Back to top', width='stretch'):
         st.session_state.scroll_to_top = True
