@@ -2940,9 +2940,14 @@ def complex_film(conn, device):
 
         if save_scrap:
             if scrap_part == "Cast":
+                cast_text = []
+                cast_name_text = []
                 for i in range(len(cast_results)):
-                    cast_text = '_ '.join(cast_results[i]["Name"])
-                    cast_name_text = ' ## '.join(f"{cast_results[i]['Link']}_ {cast_results[i]['Role']}_ {cast_results[i]['Part']}")
+                    cast_text.append(cast_results[i]["Name"])
+                    cast_name_text.append(f"{cast_results[i]['Link']}_ {cast_results[i]['Role']}_ {cast_results[i]['Part']}")
+
+                cast_text = "_ ".join(cast_text)
+                cast_name_text = " ## ".join(cast_name_text)
 
                 st.write(cast_text)
                 st.write(cast_name_text)
