@@ -2949,8 +2949,14 @@ def complex_film(conn, device):
                 cast_text = "_ ".join(cast_text)
                 cast_name_text = " ## ".join(cast_name_text)
 
-                st.write(cast_text)
-                st.write(cast_name_text)
+                if target != "New":
+                    idx = df[df["Title"]==target].index[0]
+                    row = idx + 2
+                    if film_worksheet().update(f'R{row}:S{row}', [[cast_text],[cast_name_text]]):
+                        df.at[idx, 'Cast'] = cast_text
+                        df.at[idx, 'Cast Name'] = cast_name_text
+
+                        st.session_state.film_df = df
         if file is not None:
             soup = BeautifulSoup(file, "html.parser")
 
