@@ -2928,6 +2928,7 @@ def complex_film(conn, device):
         if st.button("Clear", width='stretch'):
             cast_results = []
             new_actress_results = []
+        scrap_exe = st.button("Scrap", width='stretch')
         st.markdown('---')
         if show_scrap:
             if scrap_part == "Cast":
@@ -2974,7 +2975,7 @@ def complex_film(conn, device):
                         
             else:
                 st.write("save scrap film")
-        if file:
+        if file and scrap_exe:
             soup = BeautifulSoup(file, "html.parser")
 
             title = soup.select_one("h1.film-title").get_text(strip=True)
@@ -2982,8 +2983,6 @@ def complex_film(conn, device):
             st.subheader(title)
             
             if scrap_part == "Cast":
-                cast_results = []
-                new_actress_results = []
                 headers = soup.find_all("h3")
 
                 for h3 in headers:
