@@ -2906,7 +2906,10 @@ def complex_film(conn, device):
         scrap_part = st.radio("Scrap Part", options=["Film", "Cast"], horizontal=True)
         scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
         file = st.file_uploader("Upload HTML", type=["html", "txt"])
-        cast_results = []
+        if "cast_results" not in st.session_state:
+            st.session_state.cast_results = []
+
+        cast_results = st.session_state.cast_results
         st.markdown('---')
         show_scrap = st.button("Show", width='stretch')
         st.markdown('---')
