@@ -2912,7 +2912,7 @@ def complex_film(conn, device):
             st.session_state.cast_results = []
         if "film_results" not in st.session_state:
             st.session_state.film_results = []
-        if "new_actres_results" not in se.session_state:
+        if "new_actres_results" not in st.session_state:
             st.session_state.new_actress_results = []
 
         cast_results = st.session_state.cast_results
