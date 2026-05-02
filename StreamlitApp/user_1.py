@@ -2919,7 +2919,7 @@ def complex_film(conn, device):
         st.markdown('---')
         if show_scrap:
             if scrap_part == "Cast":
-                cast_scrap_df = pd.Dataframe(cast_results)
+                cast_scrap_df = pd.DataFrame(cast_results)
                 st.write(cast_scrap_df)
                 st.write(st.session_state.cast_df)
         if file is not None:
