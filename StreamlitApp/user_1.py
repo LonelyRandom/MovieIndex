@@ -14,6 +14,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import streamlit.components.v1 as components
 import string
+from bs4 import beautifulsoup
 
 # ACTRESS OPTS
 REVIEW_OPTS = [
@@ -2857,7 +2858,7 @@ def complex_film(conn, device):
         st.markdown('---')
         show_recommend = st.toggle('Recommended', on_change=reset_page, key='show_recommend')
         st.markdown('---')
-        show_display_mode = st.radio('Page', options=['Home', 'Data Bank', 'Cast'], horizontal=True, key='display_radio')
+        show_display_mode = st.radio('Page', options=['Home', 'Data Bank', 'Scrap'], horizontal=True, key='display_radio')
         st.markdown('---')
 
         if st.button('➕ Add New Film', width='stretch'):
@@ -2901,8 +2902,58 @@ def complex_film(conn, device):
         st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Film Bank</h1>", unsafe_allow_html=True)
         display_film_bank(actress_df, drama_df, movie_df, tv_df, device)
     else:
-        st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>On Progress</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Scrap</h1>", unsafe_allow_html=True)
+        scrap_part = st.radio("Scrap Part", options=["Film", "Cast"], horizontal=True)
+        scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
+        file = st.file_uploader("Upload HTML", type=["html", "txt"])
 
+        if file is not None:
+            html_text = file.read().decode("utf-8")
+            soup = BeautifulSoup(html_text, "html.parser")
+        
+            headers = soup.find_all("h3")
+
+            results = []
+
+            for h3 in headers:
+                if h3.get_text(strip=True) in ["Guest Role", "Support Role", "Main Role"]:
+                    ul = h3.find_next("ul")
+
+                    for item in ul.find_all("li"):
+                        name_tag = item.select_one("div.p-a-0 > a.text-primary")
+                        name = name_tag.get_text(strip=True) if name_tag else "-"
+                        profile_link = name_tag["href"]
+
+                        img = item.select_one("img")["src"]
+ 
+                        small_tag = item.select_one("small")
+                        a_tag = small_tag.find("a") if small_tag else None
+
+                        character = (
+                            a_tag["title"] if a_tag and a_tag.has_attr("title")
+                            else small_tag["title"] if small_tag and small_tag.has_attr("title")
+                            else "-"
+                        )
+  
+                        role = item.select_one("small.text-muted")
+                        role_part = role.get_text(strip=True) if role else "-"
+
+                        st.markdown('---')
+                        st.write(name)
+                        st.write(profile_link)
+                        st.image(img, width=80)
+                        st.write(character)
+                        st.write(role_part)
+
+                        results.append({
+                            "name": name,
+                            "link": "https://mydramalist.com/" + profile_link,
+                            "character": character,
+                            "role": role,
+                            "img": img 
+                        })
+
+                    st.write(results)
 
     if st.button('⬆️ Back to top', width='stretch'):
         st.session_state.scroll_to_top = True
