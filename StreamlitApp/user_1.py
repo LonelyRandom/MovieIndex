@@ -2957,6 +2957,8 @@ def complex_film(conn, device):
                         df.at[idx, 'Cast Name'] = cast_name_text
 
                         st.session_state.film_df = df
+                        st.toast('✅️ Cast and Cast Name added successfully!')
+                        time.sleep(.5)
                 else:
                     st.warning("No selected film")
 
