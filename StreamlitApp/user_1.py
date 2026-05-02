@@ -2907,7 +2907,8 @@ def complex_film(conn, device):
         if scrap_part == "Film":
             scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
             
-        file = st.file_uploader("Upload HTML", type=["html", "txt"])
+        # file = st.file_uploader("Upload HTML", type=["html", "txt"])
+        file = st.text_area("Coba aja")
         if "cast_results" not in st.session_state:
             st.session_state.cast_results = []
         if "film_results" not in st.session_state:
