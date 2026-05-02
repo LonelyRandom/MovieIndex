@@ -2952,12 +2952,27 @@ def complex_film(conn, device):
                 if target != "New":
                     idx = df[df["Title"]==target].index[0]
                     row = idx + 2
-                    if film_worksheet().update(f'R{row}:S{row}', [[cast_text],[cast_name_text]]):
+                    if film_worksheet().update(f'R{row}:S{row}', [cast_text, cast_name_text]):
                         df.at[idx, 'Cast'] = cast_text
                         df.at[idx, 'Cast Name'] = cast_name_text
 
                         st.session_state.film_df = df
-        if file is not None:
+                else:
+                    st.warning("No selected film")
+
+                if new_actress_results:
+                    new_actress_scrap_df = pd.DataFrame(new_actress_results)
+                    new_actress_data = new_actress_scrap_df.values.tolist()
+
+                    start_row = len(cast_df) + 2
+                    end_row = start_row + len(new_actress_data) + 2
+                    if cast_worksheet().update(f"A{start_row}:D{end_row}", new_actress_data):
+                        final_df = pd.concat([cast_df, new_actress_scrap_df], ignore_index=True)
+                        st.ssssion_state.cast_df = final_df
+                        
+            else:
+                st.write("save scrap film")
+        if file:
             soup = BeautifulSoup(file, "html.parser")
 
             title = soup.select_one("h1.film-title").get_text(strip=True)
@@ -3013,6 +3028,10 @@ def complex_film(conn, device):
                                 })
             else:
                 st.write("scrap film")
+                if scrap_type != "Movie":
+                    eps = 2
+        else:
+            st.warning("No HTML detected!")
 
     if st.button('⬆️ Back to top', width='stretch'):
         st.session_state.scroll_to_top = True
