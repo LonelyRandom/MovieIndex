@@ -2952,7 +2952,7 @@ def complex_film(conn, device):
                 if target != "New":
                     idx = df[df["Title"]==target].index[0]
                     row = idx + 2
-                    if film_worksheet().update(f'R{row}:S{row}', [cast_text, cast_name_text]):
+                    if film_worksheet().update(f'R{row}:S{row}', [[cast_text, cast_name_text]]):
                         df.at[idx, 'Cast'] = cast_text
                         df.at[idx, 'Cast Name'] = cast_name_text
 
