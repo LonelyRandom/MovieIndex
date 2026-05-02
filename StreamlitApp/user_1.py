@@ -2982,6 +2982,8 @@ def complex_film(conn, device):
             st.subheader(title)
             
             if scrap_part == "Cast":
+                cast_results = []
+                new_actress_results = []
                 headers = soup.find_all("h3")
 
                 for h3 in headers:
