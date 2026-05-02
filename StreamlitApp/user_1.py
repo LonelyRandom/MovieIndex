@@ -2917,6 +2917,7 @@ def complex_film(conn, device):
 
         cast_results = st.session_state.cast_results
         cast_df = st.session_state.cast_df
+        new_actress_results = st.session_state.new_actress_results
         
         st.markdown('---')
         with st.container(horizontal=True):   
