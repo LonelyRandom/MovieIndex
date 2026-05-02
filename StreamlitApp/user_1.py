@@ -14,7 +14,7 @@ import gspread
 from google.oauth2.service_account import Credentials
 import streamlit.components.v1 as components
 import string
-from bs4 import beautifulsoup
+from bs4 import BeautifulSoup
 
 # ACTRESS OPTS
 REVIEW_OPTS = [
