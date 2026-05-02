@@ -2904,10 +2904,14 @@ def complex_film(conn, device):
     else:
         st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Scrap</h1>", unsafe_allow_html=True)
         scrap_part = st.radio("Scrap Part", options=["Film", "Cast"], horizontal=True)
-        scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
+        if scrap_part == "Film":
+            scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
+            
         file = st.file_uploader("Upload HTML", type=["html", "txt"])
         if "cast_results" not in st.session_state:
             st.session_state.cast_results = []
+        if "film_results" not in st.session_state:
+            st.session_state.film_results = []
 
         cast_results = st.session_state.cast_results
         st.markdown('---')
@@ -2915,7 +2919,9 @@ def complex_film(conn, device):
         st.markdown('---')
         if show_scrap:
             if scrap_part == "Cast":
-                st.write(cast_results)
+                cast_scrap_df = pd.Dataframe(cast_results)
+                st.write(cast_scrap_df)
+                st.write(st.session_state.cast_df)
         if file is not None:
             html_text = file.read().decode("utf-8")
             soup = BeautifulSoup(html_text, "html.parser")
@@ -2924,7 +2930,7 @@ def complex_film(conn, device):
                 headers = soup.find_all("h3")
 
                 for h3 in headers:
-                    if h3.get_text(strip=True) in ["Guest Role", "Support Role", "Main Role"]:
+                    if h3.get_text(strip=True) in ["Guest Role", "Support Role", "Main Role", "Cameo"]:
                         ul = h3.find_next("ul")
 
                         for item in ul.find_all("li"):
@@ -2960,7 +2966,8 @@ def complex_film(conn, device):
                                 "role": role_part,
                                 "img": img.replace("s.jpg","c.jpg") 
                             })
-
+            else:
+                st.write("scrap film")
 
     if st.button('⬆️ Back to top', width='stretch'):
         st.session_state.scroll_to_top = True
