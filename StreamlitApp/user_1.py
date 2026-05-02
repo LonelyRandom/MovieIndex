@@ -2937,8 +2937,8 @@ def complex_film(conn, device):
         if save_scrap:
             st.write("save scrap")
         if file is not None:
-            html_text = file.read().decode("utf-8")
-            soup = BeautifulSoup(html_text, "html.parser")
+            # html_text = file.read().decode("utf-8")
+            soup = BeautifulSoup(file, "html.parser")
 
             if scrap_part == "Cast":
                 headers = soup.find_all("h3")
