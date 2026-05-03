@@ -1492,12 +1492,13 @@ def complex_film(conn, device):
                     if film['Cast Name'] != '--':
                         cast_data = film['Cast Name']
                         cast_list = cast_data.split(' ## ')
-                        st.write(cast_list)
                         for actress_data in cast_list:
                             actress_role = actress_data.split('_ ')
                             actress_name = cast_df.loc[cast_df['Link'] == actress_role[0], 'Target Name']
                             if actress_name.iloc[0] == '--':
                                 actress_name = cast_df.loc[cast_df['Link'] == actress_role[0], 'Name'].iloc[0]
+                            else:
+                                actress_name = actress_name.iloc[0]
 
                             new_row = [
                                 actress_name,
@@ -1525,7 +1526,7 @@ def complex_film(conn, device):
                             st.session_state.scroll_to_top = True
                             st.rerun()
                         if film['Cast Name'] != '--':
-                            if actress_name in cast_role_df['Name'].values and '--' in actress_role_df.loc[actress_role_df['Name'] == actress_name, 'Role Part'].values and '--' in actress_role_df.loc[actress_role_df['Name'] == actress_name, 'Role Name'].values:
+                            if actress_name in cast_role_df['Name'].values and actress_role_df.loc[actress_role_df['Name'] == actress_name, 'Role Part'].isin(['--']).any() and actress_role_df.loc[actress_role_df['Name'] == actress_name, 'Role Name'].isin(['--']).any():
                                 if st.button('✅', type='tertiary', key=f'exist_role_{idx}'):
                                     match_cast = cast_role_df[cast_role_df['Name'] == actress_name]
                                     match_act = actress_role_df[actress_role_df['Name'] == actress_name].index[0]
@@ -2909,43 +2910,44 @@ def complex_film(conn, device):
             
         file = st.text_area("HTML TEXT", placeholder="Paste your html here...")
         target = st.selectbox('Film Target', options=TITLE_OPTS, width='stretch')
+        if target == 'New':
+            film_link = st.text_input('MDL Link', width='stretch', placeholder='Input your new film link here...')
         
         if "cast_results" not in st.session_state:
             st.session_state.cast_results = []
         if "film_results" not in st.session_state:
             st.session_state.film_results = []
-        if "new_actres_results" not in st.session_state:
+        if "new_actress_results" not in st.session_state:
             st.session_state.new_actress_results = []
 
-        cast_results = st.session_state.cast_results
-        cast_df = st.session_state.cast_df
-        new_actress_results = st.session_state.new_actress_results
-        
         st.markdown('---')
         with st.container(horizontal=True):   
             show_scrap = st.button("Show", width='stretch')
             save_scrap = st.button("Save", width='stretch', type='primary')
-        if st.button("Clear", width='stretch'):
-            cast_results = []
-            new_actress_results = []
         scrap_exe = st.button("Scrap", width='stretch')
         st.markdown('---')
         if show_scrap:
             if scrap_part == "Cast":
-                if cast_results:
-                    cast_scrap_df = pd.DataFrame(cast_results)
+                if st.session_state.cast_results:
+                    cast_scrap_df = pd.DataFrame(st.session_state.cast_results)
                     st.write(cast_scrap_df)
-                if new_actress_results:
-                    new_actress_df = pd.DataFrame(new_actress_results)
+                
+                st.write(st.session_state.new_actress_results)
+                if st.session_state.new_actress_results:
+                    new_actress_df = pd.DataFrame(st.session_state.new_actress_results)
                     st.write(new_actress_df)
-
+            else:
+                if st.session_state.film_results:
+                    film_scrap_df = pd.DataFrame(st.session_state.film_results)
+                    st.write(film_scrap_df)
+                
         if save_scrap:
             if scrap_part == "Cast":
                 cast_text = []
                 cast_name_text = []
-                for i in range(len(cast_results)):
-                    cast_text.append(cast_results[i]["Name"])
-                    cast_name_text.append(f"{cast_results[i]['Link']}_ {cast_results[i]['Role']}_ {cast_results[i]['Part']}")
+                for i in range(len(st.session_state.cast_results)):
+                    cast_text.append(st.session_state.cast_results[i]["Name"])
+                    cast_name_text.append(f"{st.session_state.cast_results[i]['Link']}_ {st.session_state.cast_results[i]['Role']}_ {st.session_state.cast_results[i]['Part']}")
 
                 cast_text = "_ ".join(cast_text)
                 cast_name_text = " ## ".join(cast_name_text)
@@ -2963,79 +2965,175 @@ def complex_film(conn, device):
                 else:
                     st.warning("No selected film")
 
-                if new_actress_results:
-                    new_actress_scrap_df = pd.DataFrame(new_actress_results)
+                if st.session_state.new_actress_results:
+                    new_actress_scrap_df = pd.DataFrame(st.session_state.new_actress_results)
                     new_actress_data = new_actress_scrap_df.values.tolist()
 
                     start_row = len(cast_df) + 2
                     end_row = start_row + len(new_actress_data) + 2
                     if cast_worksheet().update(f"A{start_row}:D{end_row}", new_actress_data):
                         final_df = pd.concat([cast_df, new_actress_scrap_df], ignore_index=True)
-                        st.ssssion_state.cast_df = final_df
+                        st.session_state.cast_df = final_df
                         
             else:
-                st.write("save scrap film")
-        if file and scrap_exe:
-            soup = BeautifulSoup(file, "html.parser")
+                if target != "New":
+                    idx = df[df["Title"]==target].index[0]
+                    row = idx+2
+                    cells = [
+                        {"range": f"E{row}", "values": [[st.session_state.film_results[0]['Type']]]},
+                        {"range": f"G{row}", "values": [[st.session_state.film_results[0]['Episode']]]},
+                        {"range": f"N{row}", "values": [[st.session_state.film_results[0]['Synopsis']]]}
+                    ]
 
-            title = soup.select_one("h1.film-title").get_text(strip=True)
+                    film_worksheet().batch_update(cells)
+                else:
+                    if film_link:
+                        if st.session_state.film_results[0]['Type'] == 'Series':
+                            playlist = st.session_state.film_results[0]['Country'] + ' Series'
+                        elif st.session_state.film_results[0]['Type'] == 'Movie':
+                            playlist = st.session_state.film_results[0]['Country'] + ' Movies'
+                        else:
+                            playlist = 'Variety Show'
 
-            st.subheader(title)
-            
-            if scrap_part == "Cast":
+                        new_row = [
+                            'Not Watched',
+                            'Want to Watch',
+                            'https://res.cloudinary.com/devooeuej/image/upload/v1765969908/placeholder_poster.jpg',
+                            st.session_state.film_results[0]['Title'],
+                            st.session_state.film_results[0]['Type'],
+                            '?',
+                            st.session_state.film_results[0]['Episode'],
+                            '--',
+                            '?',
+                            playlist,
+                            'No One',
+                            '--',
+                            'Local',
+                            st.session_state.film_results[0]['Synopsis'],
+                            'Unqualified',
+                            '--',
+                            st.session_state.film_results[0]['Aired'],
+                            '--',
+                            '--',
+                            film_link
+                        ]
+
+                        film_worksheet().append_row(new_row)
+                        df.loc[len(df)] = new_row
+                        st.session_state.film_df = df
+                    else:
+                        st.warning('⚠️ Link is empty!')
+
+        if file:
+            if scrap_exe:
+                cast_results = []
+                new_actress_results = []
+                film_results = []
+                soup = BeautifulSoup(file, "html.parser")
+
+                title = soup.select_one("h1.film-title").get_text(strip=True)
+
+                st.subheader(title)
+                
                 headers = soup.find_all("h3")
+                if scrap_part == "Cast":
+                    for h3 in headers:
+                        if h3.get_text(strip=True) in ["Guest Role", "Support Role", "Main Role", "Cameo"]:
+                            ul = h3.find_next("ul")
 
-                for h3 in headers:
-                    if h3.get_text(strip=True) in ["Guest Role", "Support Role", "Main Role", "Cameo"]:
-                        ul = h3.find_next("ul")
+                            for item in ul.find_all("li"):
+                                name_tag = item.select_one("div.p-a-0 > a.text-primary")
+                                name = name_tag.get_text(strip=True) if name_tag else "-"
+                                profile_link = "https://mydramalist.com" + name_tag["href"]
 
-                        for item in ul.find_all("li"):
-                            name_tag = item.select_one("div.p-a-0 > a.text-primary")
-                            name = name_tag.get_text(strip=True) if name_tag else "-"
-                            profile_link = "https://mydramalist.com" + name_tag["href"]
-
-                            img = item.select_one("img")["src"]
- 
-                            small_tag = item.select_one("small")
-                            a_tag = small_tag.find("a") if small_tag else None
-  
-                            character = (
-                                a_tag["title"] if a_tag and a_tag.has_attr("title")
-                                else small_tag["title"] if small_tag and small_tag.has_attr("title")
-                                else "-"
-                            )
+                                img = item.select_one("img")["src"]
     
-                            role = item.select_one("small.text-muted")
-                            role_part = role.get_text(strip=True) if role else "-"
+                                small_tag = item.select_one("small")
+                                a_tag = small_tag.find("a") if small_tag else None
+    
+                                character = (
+                                    a_tag["title"] if a_tag and a_tag.has_attr("title")
+                                    else small_tag["title"] if small_tag and small_tag.has_attr("title")
+                                    else "-"
+                                )
+        
+                                role = item.select_one("small.text-muted")
+                                role_part = role.get_text(strip=True) if role else "-"
 
-                            st.markdown('---')
-                            st.write(name)
-                            st.write(profile_link)
-                            st.image(img, width=80)
-                            st.write(character)
-                            st.write(role_part)
+                                st.markdown('---')
+                                st.write(name)
+                                st.write(profile_link)
+                                st.image(img, width=80)
+                                st.write(character)
+                                st.write(role_part)
 
-                            cast_results.append({
-                                "Name": name,
-                                "Link": profile_link,
-                                "Role": character,
-                                "Part": role_part 
-                            })
-
-                            if profile_link not in cast_df['Link'].values:
-                                new_actress_results.append({
-                                    "Name" : name,
-                                    "Picture" : img.replace("s.jpg","c.jpg"),
-                                    "Target Name" : "--",
-                                    "Link" : profile_link
+                                cast_results.append({
+                                    "Name": name,
+                                    "Link": profile_link,
+                                    "Role": character,
+                                    "Part": role_part 
                                 })
+
+                                if profile_link not in cast_df['Link'].values.tolist():
+                                    new_actress_results.append({
+                                        "Name" : name,
+                                        "Picture" : img.replace("s.jpg","c.jpg"),
+                                        "Target Name" : "--",
+                                        "Link" : profile_link
+                                    })
+
+                                    st.write(new_actress_results)
+                    
+                        st.session_state.cast_results = cast_results
+                        st.session_state.new_actress_results = new_actress_results
+                else:
+                    synopsis_container = soup.find("div", class_="show-synopsis").find("p")
+                    synopsis = synopsis_container.get_text(" ", strip=True)
+                    st.write(synopsis)
+                    for h3 in headers:
+                        if h3.get_text(strip=True) == "Details":
+                            next_div = h3.find_parent("div").find_next_sibling("div")
+        
+                            if next_div:
+                                li_items = next_div.find_all("li")
+                                for li in li_items:
+                                    label = li.find("b")
+                                    if label.get_text(strip=True) == 'Type:':
+                                        film_type = li.find("span").get_text(strip=True)
+                                        if film_type == 'Drama':
+                                            film_type = 'Series'
+                                        elif film_type == 'TV Program':
+                                            film_type = 'TV Show'
+                                        st.write(film_type)
+                                    elif label.get_text(strip=True) == 'Country:':
+                                        film_country = label.next_sibling.strip()
+                                        st.write(film_country)
+                                    elif label.get_text(strip=True) == 'Episodes:':
+                                        if scrap_type != 'Movie':
+                                            film_episode = label.next_sibling.strip()
+                                        else:
+                                            film_episode = '?'
+                                        st.write(film_episode)
+                                    elif label.get_text(strip=True) in ['Aired:', 'Airs:', 'Release Date:']:
+                                        film_release_date = label.next_sibling.strip()
+                                        st.write(film_release_date)
+
+                    film_results.append({
+                        "Title" : title,
+                        "Synopsis" : synopsis,
+                        "Type" : film_type,
+                        "Country" : film_country,
+                        "Episode" : film_episode,
+                        "Aired" : film_release_date
+                    })
+
+                    st.session_state.film_results = film_results
+
             else:
-                st.write("scrap film")
-                if scrap_type != "Movie":
-                    eps = 2
+                st.success('✅ HTML Detected! Ready to scrap!')
         else:
             st.warning("No HTML detected!")
-
+    st.markdown('---')
     if st.button('⬆️ Back to top', width='stretch'):
         st.session_state.scroll_to_top = True
         st.rerun()
