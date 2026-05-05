@@ -3100,10 +3100,14 @@ def complex_film(conn, device):
                                     label = li.find("b")
                                     if label.get_text(strip=True) == 'Type:':
                                         film_type = li.find("span").get_text(strip=True)
+                                        if not film_type:
+                                            film_type = label.next_sibling.strip()
+
                                         if film_type == 'Drama':
                                             film_type = 'Series'
                                         elif film_type == 'TV Program':
                                             film_type = 'TV Show'
+                                            
                                         st.write(film_type)
                                     elif label.get_text(strip=True) == 'Country:':
                                         film_country = label.next_sibling.strip()
