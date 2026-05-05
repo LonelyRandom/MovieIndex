@@ -3084,8 +3084,6 @@ def complex_film(conn, device):
                                         "Target Name" : "--",
                                         "Link" : profile_link
                                     })
-
-                                    st.write(new_actress_results)
                     
                         st.session_state.cast_results = cast_results
                         st.session_state.new_actress_results = new_actress_results
