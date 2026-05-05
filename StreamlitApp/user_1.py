@@ -3088,7 +3088,7 @@ def complex_film(conn, device):
                         st.session_state.new_actress_results = new_actress_results
                 else:
                     synopsis_container = soup.find("div", class_="show-synopsis").find("p")
-                    synopsis = synopsis_container.get_text(" ", strip=True)
+                    synopsis = synopsis_container.get_text(" ", strip=True).replace("Edit Translation","")
                     st.write(synopsis)
                     for h3 in headers:
                         if h3.get_text(strip=True) == "Details":
@@ -3098,10 +3098,10 @@ def complex_film(conn, device):
                                 li_items = next_div.find_all("li")
                                 for li in li_items:
                                     label = li.find("b")
-                                    st.write(label.get_text(strip=True))
+            
                                     if label.get_text(strip=True) == 'Type:':
                                         film_type = li.find("span").get_text(strip=True)
-                                        st.write(film_type)
+                                        
                                         if not film_type:
                                             film_type = label.next_sibling.strip()
 
