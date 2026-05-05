@@ -3098,8 +3098,10 @@ def complex_film(conn, device):
                                 li_items = next_div.find_all("li")
                                 for li in li_items:
                                     label = li.find("b")
+                                    st.write(label.get_text(strip=True))
                                     if label.get_text(strip=True) == 'Type:':
                                         film_type = li.find("span").get_text(strip=True)
+                                        st.write(film_type)
                                         if not film_type:
                                             film_type = label.next_sibling.strip()
 
