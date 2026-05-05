@@ -2905,8 +2905,7 @@ def complex_film(conn, device):
     else:
         st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Scrap</h1>", unsafe_allow_html=True)
         scrap_part = st.radio("Scrap Part", options=["Film", "Cast"], horizontal=True)
-        if scrap_part == "Film":
-            scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
+        scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
             
         file = st.text_area("HTML TEXT", placeholder="Paste your html here...")
         target = st.selectbox('Film Target', options=TITLE_OPTS, width='stretch')
@@ -3037,8 +3036,12 @@ def complex_film(conn, device):
                 
                 headers = soup.find_all("h3")
                 if scrap_part == "Cast":
+                    if scrap_type == 'TV Show':
+                        section_list = ["Main Host", "Regular Member", "Guest"]
+                    else:
+                        section_list = ["Guest Role", "Support Role", "Main Role", "Cameo"]
                     for h3 in headers:
-                        if h3.get_text(strip=True) in ["Guest Role", "Support Role", "Main Role", "Cameo"]:
+                        if h3.get_text(strip=True) in section_list:
                             ul = h3.find_next("ul")
 
                             for item in ul.find_all("li"):
