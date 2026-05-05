@@ -2985,6 +2985,13 @@ def complex_film(conn, device):
                     ]
 
                     film_worksheet().batch_update(cells)
+                    df.at[idx, 'Type'] = st.session_state.film_results[0]['Type']
+                    df.at[idx, 'Episode'] = st.session_state.film_results[0]['Episode']
+                    df.at[idx, 'Synopsis'] = st.session_state.film_results[0]['Synopsis']
+
+                    st.session_state.film_df = df
+                    st.toast('✅️ Scrap added successfully!')
+                    time.sleep(.5)
                 else:
                     if film_link:
                         if st.session_state.film_results[0]['Type'] == 'Series':
