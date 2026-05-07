@@ -84,10 +84,10 @@ TYPE_OPTS = [
 
 ROLE_PART_OPTS = [
     'Select Role Part', 
-    'Main Role',  
-    'Support Role', 
+    'Main',  
+    'Support', 
     'Cameo',
-    'Guest Role'
+    'Guest'
 ]
 
 TV_PART_OPTS = [
@@ -2334,7 +2334,6 @@ def complex_film(conn, device):
                     role_error = False
                     actress_df = st.session_state.actress_df.copy()
                     selected_actress_data = actress_df[actress_df['Name (Stage)'].isin(selected_actress)]
-                    st.write(selected_actress_data)
                     if film['Roles'] != 'Unqualified':
                         roles_is_empty = pd.isna(film['Roles']) or film['Roles'] == '--'
                         if not roles_is_empty:
@@ -2395,6 +2394,8 @@ def complex_film(conn, device):
                         if data['Name (Stage)'] in actress_role_df['Name'].to_list():
                             if role_data['Role Part'] != '--':
                                 role_part_text = role_data['Role Part'].replace('Role','')
+                                st.write(role_part_text)
+                                st.write(role_data['Role Part'])
                             role_part_index = ROLE_PART_OPTS.index(role_part_text) if role_part_text in ROLE_PART_OPTS else 0
                             role_part = st.selectbox('Role Part:red[*]', options=ROLE_PART_OPTS, key=f'role_part_{idx}', width='stretch', index=role_part_index)
                         else:
