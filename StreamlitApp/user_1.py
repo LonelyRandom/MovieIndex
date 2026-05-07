@@ -84,11 +84,10 @@ TYPE_OPTS = [
 
 ROLE_PART_OPTS = [
     'Select Role Part', 
-    'Main', 
-    'Second', 
-    'Support', 
+    'Main Role',  
+    'Support Role', 
     'Cameo',
-    'Guest'
+    'Guest Role'
 ]
 
 TV_PART_OPTS = [
