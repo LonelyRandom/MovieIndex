@@ -933,6 +933,10 @@ def complex_film(conn, device):
         st.session_state.show_more_guest = False
     if 'show_more_cameo' not in st.session_state:
         st.session_state.show_more_cameo = False
+    if 'show_more_main_host' not in st.session_state:
+        st.session_state.show_more_main_host = False
+    if 'show_more_regular_member' not in st.session_state:
+        st.session_state.show_more_regular_member = False
     
 
     if st.session_state.scroll_to_top:
@@ -1514,8 +1518,6 @@ def complex_film(conn, device):
                     else:
                         button_label = actress_name + " / " + matching_actresses["Name (Given)"][idx]
 
-                    
-
                     with st.container(horizontal=True):
                         if st.button(f':orange-background[**{button_label}**]', width='content', type='tertiary', key=f"{actress_name}_{idx}", on_click=reset_page):
                             st.session_state.viewing_film_index = None
@@ -1566,7 +1568,6 @@ def complex_film(conn, device):
                                 </div>
                             """, unsafe_allow_html=True)
                             
-                        
                         with st.container():
                             if not roles_is_empty:
                                 roles = actress_role_df[actress_role_df['Name'] == actress_name].iloc[0]
@@ -1907,13 +1908,14 @@ def complex_film(conn, device):
 
         with tab_other_cast:
             try:
-                # st.write('Under Construction')
                 if film['Cast Name'] != '--':
                     other_casts = film['Cast Name'].split(' ## ')
                     other_cast_main = []
                     other_cast_support = []
                     other_cast_guest = []
                     other_cast_cameo = []
+                    other_cast_regular_member = []
+                    other_cast_main_host = []
                     for cast in other_casts:
                         cast_data = cast.split('_ ')
                         cast_link = cast_data[0]
@@ -1955,123 +1957,235 @@ def complex_film(conn, device):
                                     'Role' : cast_role,
                                     'Part' : cast_part
                                 })
-                    
-                    st.markdown(f"<h2 style='text-align: center;'>Other Cast</h2>", unsafe_allow_html=True)
-                    st.subheader(':orange-background[Main Role]')
-                    if len(other_cast_main) > 0:
-                        if not st.session_state.show_more_main:
-                            loop = min(3, len(other_cast_main))
-                        else:
-                            loop = len(other_cast_main)
-
-                        for i in range(loop):
-                            if other_cast_main[i]["Name"] in actress_df['Name (Stage)'].values:
-                                st.write(f':yellow-background[{i+1}. {other_cast_main[i]["Name"]}] ✅')
+                            elif cast_part.lower() == 'regular member':
+                                other_cast_regular_member.append({
+                                    'Picture' : cast_pic,
+                                    'Name' : cast_name,
+                                    'Role' : cast_role,
+                                    'Part' : cast_part
+                                })
+                            elif cast_part.lower() == 'main host':
+                                other_cast_main_host.append({
+                                    'Picture' : cast_pic,
+                                    'Name' : cast_name,
+                                    'Role' : cast_role,
+                                    'Part' : cast_part
+                                })
+                            elif cast_part.lower() == 'guest':
+                                other_cast_guest.append({
+                                    'Picture' : cast_pic,
+                                    'Name' : cast_name,
+                                    'Role' : cast_role,
+                                    'Part' : cast_part
+                                })
+                            
+                    if film['Type'] != 'TV Show':
+                        st.markdown(f"<h2 style='text-align: center;'>Other Cast</h2>", unsafe_allow_html=True)
+                        st.subheader(':orange-background[Main Role]')
+                        if len(other_cast_main) > 0:
+                            if not st.session_state.show_more_main:
+                                loop = min(3, len(other_cast_main))
                             else:
-                                st.write(f':yellow-background[{i+1}. {other_cast_main[i]["Name"]}]')
-                            with st.container(horizontal=True):
-                                st.image(other_cast_main[i]['Picture'], width=70)
-                                with st.container():
-                                    st.write(f'Role Name : :gray-background[{other_cast_main[i]["Role"]}]')
-                                    st.write(f'Role Part : :gray-background[{other_cast_main[i]["Part"]}]')
-                        if not st.session_state.show_more_main and len(other_cast_main) > min(3, len(other_cast_main)):
-                            if st.button('Show More 🔽', key='show_more_main'):
-                                st.session_state.show_more_main = True
-                                st.rerun()
-                        elif st.session_state.show_more_main and len(other_cast_main) > min(3, len(other_cast_main)):
-                            if st.button('Show Less 🔼', key='show_less_main'):
-                                st.session_state.show_more_main = False
-                                st.rerun()
+                                loop = len(other_cast_main)
 
-                    else:
-                        st.write('--')
-                    
-                    st.markdown('---')
-                    st.subheader(':orange-background[Support Role]')
-                    if len(other_cast_support) > 0:
-                        if not st.session_state.show_more_support:
-                            loop = min(3, len(other_cast_support))
+                            for i in range(loop):
+                                if other_cast_main[i]["Name"] in actress_df['Name (Stage)'].values:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_main[i]["Name"]}] ✅')
+                                else:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_main[i]["Name"]}]')
+                                with st.container(horizontal=True):
+                                    st.image(other_cast_main[i]['Picture'], width=70)
+                                    with st.container():
+                                        st.write(f'Role Name : :gray-background[{other_cast_main[i]["Role"]}]')
+                                        st.write(f'Role Part : :gray-background[{other_cast_main[i]["Part"]}]')
+                            if not st.session_state.show_more_main and len(other_cast_main) > min(3, len(other_cast_main)):
+                                if st.button('Show More 🔽', key='show_more_main'):
+                                    st.session_state.show_more_main = True
+                                    st.rerun()
+                            elif st.session_state.show_more_main and len(other_cast_main) > min(3, len(other_cast_main)):
+                                if st.button('Show Less 🔼', key='show_less_main'):
+                                    st.session_state.show_more_main = False
+                                    st.rerun()
+
                         else:
-                            loop = len(other_cast_support)
-
-                        for i in range(loop):
-                            if other_cast_support[i]["Name"] in actress_df['Name (Stage)'].values:
-                                st.write(f':yellow-background[{i+1}. {other_cast_support[i]["Name"]}] ✅')
-                            else:
-                                st.write(f':yellow-background[{i+1}. {other_cast_support[i]["Name"]}]')
-                            with st.container(horizontal=True):
-                                st.image(other_cast_support[i]['Picture'], width=70)
-                                with st.container():
-                                    st.write(f'Role Name : :gray-background[{other_cast_support[i]["Role"]}]')
-                                    st.write(f'Role Part : :gray-background[{other_cast_support[i]["Part"]}]')
-                        if not st.session_state.show_more_support and len(other_cast_support) > min(3, len(other_cast_support)):
-                            if st.button('Show More 🔽', key='show_more_support'):
-                                st.session_state.show_more_support = True
-                        elif st.session_state.show_more_support:
-                            if st.button('Show Less 🔼', key='show_less_support'):
-                                st.session_state.show_more_support = False
-                    else:
-                        st.write('--')
-                    
-                    st.markdown('---')
-                    st.subheader(':orange-background[Guest Role]')
-                    if len(other_cast_guest) > 0:
-                        if not st.session_state.show_more_guest:
-                            loop = min(3, len(other_cast_guest))
-                        else:
-                            loop = len(other_cast_guest)
-
-                        for i in range(loop):
-                            if other_cast_guest[i]["Name"] in actress_df['Name (Stage)'].values:
-                                st.write(f':yellow-background[{i+1}. {other_cast_guest[i]["Name"]}] ✅')
-                            else:
-                                st.write(f':yellow-background[{i+1}. {other_cast_guest[i]["Name"]}]')
-                            with st.container(horizontal=True):
-                                st.image(other_cast_guest[i]['Picture'], width=70)
-                                with st.container():
-                                    st.write(f'Role Name : :gray-background[{other_cast_guest[i]["Role"]}]')
-                                    st.write(f'Role Part : :gray-background[{other_cast_guest[i]["Part"]}]')
+                            st.write('--')
                         
-                        if not st.session_state.show_more_guest and len(other_cast_guest) > min(3, len(other_cast_guest)):
-                            if st.button('Show More 🔽', key='show_more_guest'):
-                                st.session_state.show_more_guest = True
-                                st.rerun()
-                        elif st.session_state.show_more_guest and len(other_cast_guest) > min(3, len(other_cast_guest)):
-                            if st.button('Show Less 🔼', key='show_less_guest'):
-                                st.session_state.show_more_guest = False
-                                st.rerun()
-                    else:
-                        st.write('--')
-
-                    st.markdown('---')
-                    st.subheader(':orange-background[Cameo]')
-                    if len(other_cast_cameo) > 0:
-                        if not st.session_state.show_more_cameo:
-                            loop = min(3, len(other_cast_cameo))
-                        else:
-                            loop = len(other_cast_cameo)
-
-                        for i in range(loop):
-                            if other_cast_cameo[i]["Name"] in actress_df['Name (Stage)'].values:
-                                st.write(f':yellow-background[{i+1}. {other_cast_cameo[i]["Name"]}] ✅')
+                        st.markdown('---')
+                        st.subheader(':orange-background[Support Role]')
+                        if len(other_cast_support) > 0:
+                            if not st.session_state.show_more_support:
+                                loop = min(3, len(other_cast_support))
                             else:
-                                st.write(f':yellow-background[{i+1}. {other_cast_cameo[i]["Name"]}]')
-                            with st.container(horizontal=True):
-                                st.image(other_cast_cameo[i]['Picture'], width=80)
-                                with st.container():
-                                    st.write(f'Role Name : :gray-background[{other_cast_cameo[i]["Role"]}]')
-                                    st.write(f'Role Part : :gray-background[{other_cast_cameo[i]["Part"]}]')
+                                loop = len(other_cast_support)
+
+                            for i in range(loop):
+                                if other_cast_support[i]["Name"] in actress_df['Name (Stage)'].values:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_support[i]["Name"]}] ✅')
+                                else:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_support[i]["Name"]}]')
+                                with st.container(horizontal=True):
+                                    st.image(other_cast_support[i]['Picture'], width=70)
+                                    with st.container():
+                                        st.write(f'Role Name : :gray-background[{other_cast_support[i]["Role"]}]')
+                                        st.write(f'Role Part : :gray-background[{other_cast_support[i]["Part"]}]')
+                            if not st.session_state.show_more_support and len(other_cast_support) > min(3, len(other_cast_support)):
+                                if st.button('Show More 🔽', key='show_more_support'):
+                                    st.session_state.show_more_support = True
+                            elif st.session_state.show_more_support:
+                                if st.button('Show Less 🔼', key='show_less_support'):
+                                    st.session_state.show_more_support = False
+                        else:
+                            st.write('--')
                         
-                        if not st.session_state.show_more_cameo and len(other_cast_cameo) > min(3, len(other_cast_cameo)):
-                            if st.button('Show More 🔽', key='show_more_cameo'):
-                                st.session_state.show_more_cameo = True
-                                st.rerun()
-                        elif st.session_state.show_more_cameo and len(other_cast_cameo) > min(3, len(other_cast_cameo)):
-                            if st.button('Show Less 🔼', key='show_less_cameo'):
-                                st.session_state.show_more_cameo = False
-                                st.rerun()
+                        st.markdown('---')
+                        st.subheader(':orange-background[Guest Role]')
+                        if len(other_cast_guest) > 0:
+                            if not st.session_state.show_more_guest:
+                                loop = min(3, len(other_cast_guest))
+                            else:
+                                loop = len(other_cast_guest)
+
+                            for i in range(loop):
+                                if other_cast_guest[i]["Name"] in actress_df['Name (Stage)'].values:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_guest[i]["Name"]}] ✅')
+                                else:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_guest[i]["Name"]}]')
+                                with st.container(horizontal=True):
+                                    st.image(other_cast_guest[i]['Picture'], width=70)
+                                    with st.container():
+                                        st.write(f'Role Name : :gray-background[{other_cast_guest[i]["Role"]}]')
+                                        st.write(f'Role Part : :gray-background[{other_cast_guest[i]["Part"]}]')
+                            
+                            if not st.session_state.show_more_guest and len(other_cast_guest) > min(3, len(other_cast_guest)):
+                                if st.button('Show More 🔽', key='show_more_guest'):
+                                    st.session_state.show_more_guest = True
+                                    st.rerun()
+                            elif st.session_state.show_more_guest and len(other_cast_guest) > min(3, len(other_cast_guest)):
+                                if st.button('Show Less 🔼', key='show_less_guest'):
+                                    st.session_state.show_more_guest = False
+                                    st.rerun()
+                        else:
+                            st.write('--')
+
+                        st.markdown('---')
+                        st.subheader(':orange-background[Cameo]')
+                        if len(other_cast_cameo) > 0:
+                            if not st.session_state.show_more_cameo:
+                                loop = min(3, len(other_cast_cameo))
+                            else:
+                                loop = len(other_cast_cameo)
+
+                            for i in range(loop):
+                                if other_cast_cameo[i]["Name"] in actress_df['Name (Stage)'].values:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_cameo[i]["Name"]}] ✅')
+                                else:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_cameo[i]["Name"]}]')
+                                with st.container(horizontal=True):
+                                    st.image(other_cast_cameo[i]['Picture'], width=80)
+                                    with st.container():
+                                        st.write(f'Role Name : :gray-background[{other_cast_cameo[i]["Role"]}]')
+                                        st.write(f'Role Part : :gray-background[{other_cast_cameo[i]["Part"]}]')
+                            
+                            if not st.session_state.show_more_cameo and len(other_cast_cameo) > min(3, len(other_cast_cameo)):
+                                if st.button('Show More 🔽', key='show_more_cameo'):
+                                    st.session_state.show_more_cameo = True
+                                    st.rerun()
+                            elif st.session_state.show_more_cameo and len(other_cast_cameo) > min(3, len(other_cast_cameo)):
+                                if st.button('Show Less 🔼', key='show_less_cameo'):
+                                    st.session_state.show_more_cameo = False
+                                    st.rerun()
+                        else:
+                            st.write('--')
+                    
                     else:
-                        st.write('--')
+                        st.subheader(':orange-background[Main Host]')
+                        if len(other_cast_main_host) > 0:
+                            if not st.session_state.show_more_main_host:
+                                loop = min(3, len(other_cast_main_host))
+                            else:
+                                loop = len(other_cast_main_host)
+
+                            for i in range(loop):
+                                if other_cast_main_host[i]["Name"] in actress_df['Name (Stage)'].values:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_main_host[i]["Name"]}] ✅')
+                                else:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_main_host[i]["Name"]}]')
+                                with st.container(horizontal=True):
+                                    st.image(other_cast_main_host[i]['Picture'], width=80)
+                                    with st.container():
+                                        st.write(f'Role Name : :gray-background[{other_cast_main_host[i]["Role"]}]')
+                                        st.write(f'Role Part : :gray-background[{other_cast_main_host[i]["Part"]}]')
+                            
+                            if not st.session_state.show_more_main_host and len(other_cast_main_host) > min(3, len(other_cast_main_host)):
+                                if st.button('Show More 🔽', key='show_more_main_host'):
+                                    st.session_state.show_more_main_host = True
+                                    st.rerun()
+                            elif st.session_state.show_more_main_host and len(other_cast_main_host) > min(3, len(other_cast_main_host)):
+                                if st.button('Show Less 🔼', key='show_less_main_host'):
+                                    st.session_state.show_more_main_host = False
+                                    st.rerun()
+                        else:
+                            st.write('--')
+
+                        st.markdown('---')
+                        st.subheader(':orange-background[Regular Member]')
+                        if len(other_cast_regular_member) > 0:
+                            if not st.session_state.show_more_regular_member:
+                                loop = min(3, len(other_cast_regular_member))
+                            else:
+                                loop = len(other_cast_regular_member)
+
+                            for i in range(loop):
+                                if other_cast_regular_member[i]["Name"] in actress_df['Name (Stage)'].values:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_regular_member[i]["Name"]}] ✅')
+                                else:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_regular_member[i]["Name"]}]')
+                                with st.container(horizontal=True):
+                                    st.image(other_cast_regular_member[i]['Picture'], width=80)
+                                    with st.container():
+                                        st.write(f'Role Name : :gray-background[{other_cast_regular_member[i]["Role"]}]')
+                                        st.write(f'Role Part : :gray-background[{other_cast_regular_member[i]["Part"]}]')
+                            
+                            if not st.session_state.show_more_regular_member and len(other_cast_regular_member) > min(3, len(other_cast_regular_member)):
+                                if st.button('Show More 🔽', key='show_more_regular_member'):
+                                    st.session_state.show_more_regular_member = True
+                                    st.rerun()
+                            elif st.session_state.show_more_regular_member and len(other_cast_regular_member) > min(3, len(other_cast_regular_member)):
+                                if st.button('Show Less 🔼', key='show_less_regular_member'):
+                                    st.session_state.show_more_regular_member = False
+                                    st.rerun()
+                        else:
+                            st.write('--')
+
+                        st.markdown('---')
+                        st.subheader(':orange-background[Guest]')
+                        if len(other_cast_guest) > 0:
+                            if not st.session_state.show_more_guest:
+                                loop = min(3, len(other_cast_guest))
+                            else:
+                                loop = len(other_cast_guest)
+
+                            for i in range(loop):
+                                if other_cast_guest[i]["Name"] in actress_df['Name (Stage)'].values:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_guest[i]["Name"]}] ✅')
+                                else:
+                                    st.write(f':yellow-background[{i+1}. {other_cast_guest[i]["Name"]}]')
+                                with st.container(horizontal=True):
+                                    st.image(other_cast_guest[i]['Picture'], width=80)
+                                    with st.container():
+                                        st.write(f'Role Name : :gray-background[{other_cast_guest[i]["Role"]}]')
+                                        st.write(f'Role Part : :gray-background[{other_cast_guest[i]["Part"]}]')
+                            
+                            if not st.session_state.show_more_guest and len(other_cast_guest) > min(3, len(other_cast_guest)):
+                                if st.button('Show More 🔽', key='show_more_guest'):
+                                    st.session_state.show_more_guest = True
+                                    st.rerun()
+                            elif st.session_state.show_more_guest and len(other_cast_guest) > min(3, len(other_cast_guest)):
+                                if st.button('Show Less 🔼', key='show_less_guest'):
+                                    st.session_state.show_more_guest = False
+                                    st.rerun()
+                        else:
+                            st.write('--')
                 else:
                     st.warning('No Info') 
                 st.markdown('---')
@@ -2393,9 +2507,7 @@ def complex_film(conn, device):
                                     role_name = st.text_input('Role Name:red[*]', placeholder='Name in alphabet...', width='stretch', key=f'role_name_{idx}')
                         if data['Name (Stage)'] in actress_role_df['Name'].to_list():
                             if role_data['Role Part'] != '--':
-                                role_part_text = role_data['Role Part'].replace('Role','')
-                                st.write(role_part_text)
-                                st.write(role_data['Role Part'])
+                                role_part_text = role_data['Role Part'].replace(' Role','')
                             role_part_index = ROLE_PART_OPTS.index(role_part_text) if role_part_text in ROLE_PART_OPTS else 0
                             role_part = st.selectbox('Role Part:red[*]', options=ROLE_PART_OPTS, key=f'role_part_{idx}', width='stretch', index=role_part_index)
                         else:
@@ -2451,7 +2563,7 @@ def complex_film(conn, device):
                                 final_picture_url = new_pic
 
                         # kalau ganti foto dan code
-                        elif (new_pic and new_pic != '')     and (film['Title'] != edited_title):
+                        elif (new_pic and new_pic != '') and (film['Title'] != edited_title):
                             if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
                                 try:
                                     if "cloudinary" in film['Picture']:
@@ -3027,6 +3139,8 @@ def complex_film(conn, device):
                         film_worksheet().append_row(new_row)
                         df.loc[len(df)] = new_row
                         st.session_state.film_df = df
+                        st.toast('✅️ Scrap added successfully!')
+                        time.sleep(.5)
                     else:
                         st.warning('⚠️ Link is empty!')
 
