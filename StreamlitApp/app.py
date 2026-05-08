@@ -1,14 +1,10 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 from login_auth import log_in_auth
 from user_1 import complex_home, complex_actress, complex_film
 
 user_1 = st.secrets["indicators"]["USER_1"]
 
 user_3 = st.secrets["indicators"]["USER_3"]
-
-
-conn = st.connection("gsheets", type=GSheetsConnection)
 
 if 'page' not in st.session_state:
     st.session_state.page = 'login'
@@ -21,7 +17,7 @@ if 'check_login' not in st.session_state:
 
 if st.session_state.page == 'login':
     st.cache_data.clear()
-    is_logged_in, usn = log_in_auth(conn)
+    is_logged_in, usn = log_in_auth()
     st.session_state.check_login = is_logged_in
 
     if st.session_state.check_login:
@@ -39,9 +35,9 @@ elif st.session_state.page == 'home':
         page_icon='🏠'
     )
     if st.session_state.usn == user_1:
-        page = complex_home(conn)
+        page = complex_home()
     elif st.session_state.usn == user_3:
-        page = complex_home(conn)
+        page = complex_home()
     else:
         st.session_state.page = 'login'
         st.session_state.check_login = False
@@ -59,9 +55,9 @@ elif st.session_state.page == 'film':
         page_icon='🎬'
     )
     if st.session_state.usn == user_1:
-        page = complex_film(conn, 'Device 1')
+        page = complex_film('Device 1')
     elif st.session_state.usn == user_3:
-        page = complex_film(conn,'Device 2')
+        page = complex_film('Device 2')
 
     if not page is None:
         st.session_state.page = page
@@ -74,9 +70,9 @@ elif st.session_state.page == 'actress':
         page_icon='🌟'
     )
     if st.session_state.usn == user_1:
-        page = complex_actress(conn, 'Device 1')
+        page = complex_actress('Device 1')
     elif st.session_state.usn == user_3:
-        page = complex_actress(conn, 'Device 2')
+        page = complex_actress('Device 2')
 
     if not page is None:
         st.session_state.page = page

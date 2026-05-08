@@ -5,7 +5,7 @@ import hashlib
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
-def log_in_auth(conn):
+def log_in_auth():
     st.set_page_config(
         page_title="Movies Note - Login",
         page_icon="🔐",

@@ -1,18 +1,14 @@
 import streamlit as st
-from streamlit_gsheets import GSheetsConnection
 from datetime import datetime, date
 import time
 import re
 from upload_image import upload_to_database, delete_cloudinary_image, rename_cloudinary_image
 import pandas as pd
-from value_handling import values_handling, initial_load
+from value_handling import values_handling
 from dateutil.relativedelta import relativedelta
-from streamlit_star_rating import st_star_rating
-from st_clickable_images import clickable_images
 from streamlit_scroll_to_top import scroll_to_here
 import gspread
 from google.oauth2.service_account import Credentials
-import streamlit.components.v1 as components
 import string
 from bs4 import BeautifulSoup
 
@@ -492,8 +488,6 @@ def display_film_grid(df, actress_df, device):
                 if st.button('Last Page ⏭️', key='last_top', disabled=(st.session_state.film_page == total_pages), on_click=set_page, args=(total_pages,), width='stretch'):
                     st.session_state.scroll_to_here = True
                     st.rerun()
-
-                
         
         page = st.session_state.film_page
         
@@ -574,7 +568,6 @@ def display_film_grid(df, actress_df, device):
                 if st.button('⬅️',key='previous_bottom', disabled=(st.session_state.film_page == 1), on_click=set_page, args=(st.session_state.film_page-1,)):
                     st.session_state.scroll_to_here = True
                     st.rerun()
-
                 
                 start_page = max(1, st.session_state.film_page - 1)  
                 end_page = min(total_pages, st.session_state.film_page + 2)  
@@ -608,7 +601,6 @@ def display_film_grid(df, actress_df, device):
                 if st.button('Last Page ⏭️', key='last_bottom', disabled=(st.session_state.film_page == total_pages), on_click=set_page, args=(total_pages,), width='stretch'):
                     st.session_state.scroll_to_here = True
                     st.rerun()
-
     else:
         st.info('No film match the filter')
 
@@ -635,7 +627,6 @@ def display_film_bank(actress_df, drama_df, movie_df, tv_df, device):
         filtered_drama_df = filtered_drama_df[filtered_drama_df['Actress'].str.contains(selected_actress, na=False)]
         filtered_movie_df = filtered_movie_df[filtered_movie_df['Actress'].str.contains(selected_actress, na=False)]
         filtered_tv_df = filtered_tv_df[filtered_tv_df['Actress'].str.contains(selected_actress, na=False)]
-    
 
     if 'img_size' not in st.session_state: # useless
         st.session_state.img_size = 'Device 1'
@@ -832,13 +823,10 @@ def display_film_bank(actress_df, drama_df, movie_df, tv_df, device):
                 if st.button('Last Page ⏭️', key='last_bottom', disabled=(st.session_state.bank_page == total_pages), on_click=set_bank_page, args=(total_pages,), width='stretch'):
                     st.session_state.scroll_to_here = True
                     st.rerun()
-
     else:
         st.info('No film match the filter')
 
-
-
-def complex_home(conn):
+def complex_home():
     if 'log_out_btn' not in st.session_state:
         st.session_state.log_out_btn = False
 
@@ -924,7 +912,7 @@ def set_eps(p, max_p):
 def set_rec():
     st.session_state.rec = st.session_state.rec_eps
 
-def complex_film(conn, device):
+def complex_film(device):
     # Inisialisasi variabel kontrol
     if "editing_film_index" not in st.session_state:
         st.session_state.editing_film_index = None
@@ -3479,7 +3467,7 @@ def complex_film(conn, device):
     </script>
     """, unsafe_allow_html=True)
 
-def complex_actress(conn, device):
+def complex_actress(device):
 
     if 'actress_initial' not in st.session_state:
         st.session_state.actress_initial = False
@@ -3499,7 +3487,7 @@ def complex_actress(conn, device):
         st.session_state.delete_actress = False
 
     # Fungsi untuk refresh data dari Google Sheets
-    def refresh_data(conn):
+    def refresh_data():
         """Refresh data dari Google Sheets ke session state"""
         try:
             init_dataframe_actress()
@@ -3547,10 +3535,15 @@ def complex_actress(conn, device):
 
                 st.markdown('### Playlist')
                 st.warning(film['Playlist']) 
-        if film['Rating'] == '?':
-            st_star_rating(label='Rating', maxValue = 5, defaultValue = 0, key = "rating", read_only = True)
-        else:
-            st_star_rating(label='Rating', maxValue = 5, defaultValue = int(film['Rating']), key = "rating", read_only = True)
+        
+        with st.container(key='star_rating'):
+            if film['Rating'] == '?':
+                st.write('🌑🌑🌑🌑🌑')
+            else:
+                if film['Rating']%1 == 0:
+                    st.write('🌕' * int(film["Rating"]) + '🌑' * (5-int(film['Rating'])))
+                else:
+                    st.write('🌕' * int(film["Rating"]) + '🌗' + '🌑' * (5-(int(film['Rating'])+1)))
 
         if st.button('❌ Close', width='stretch'):
             st.session_state.film_detail = False
@@ -4554,7 +4547,7 @@ def complex_actress(conn, device):
         
         # Tombol refresh data
         if st.button("🔄 Refresh Data", width='stretch'):
-            refresh_data(conn)
+            refresh_data()
         
         if st.session_state.log_out_btn == False:
             if st.button('🔐 Logout', width='stretch'):
@@ -4917,6 +4910,10 @@ def complex_actress(conn, device):
         
     st.markdown("""
     <style>
+    .st-key-star_rating p {
+        font-size: 35px !important;        
+    }
+                
     /* ================= DESKTOP ================= */
     @media (min-width: 768px) {
         section[data-testid="stSidebar"] {
