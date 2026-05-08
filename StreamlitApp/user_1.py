@@ -365,25 +365,46 @@ def display_film_grid(df, actress_df, device):
         .tolist()
     )
 
+    ACTRESS_OPTS = ['All', 'No One'] + sorted(
+        actress_df.loc[actress_df['Name (Stage)'] != 'No One', 'Name (Stage)']
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
     if 'film_page' not in st.session_state:
         st.session_state.film_page = 1
 
     # Filter data
     filtered_df = df.copy()
     filtered_actress_df = actress_df.copy()
+
     if st.session_state.get('search_reset', False):
         st.session_state.search_reset = False
         st.session_state.search_bar = ''
+        st.session_state.search_actress = 'All'
         st.session_state.search_text = ''
+        
     if st.session_state.get('set_search', False):
         st.session_state.set_search = False
-        st.session_state.search_bar = st.session_state.search_text
+        st.session_state.filter_mode = 'Name'
+        st.session_state.search_actress = st.session_state.search_text
         st.session_state.search_text = ''
+
+    filter_mode = st.radio('Search By:', options=['Title', 'Name'], horizontal=True, key='filter_mode')
     with st.container(horizontal=True, vertical_alignment='bottom'):
-        search_name = st.text_input("🔍 Search (Title):", placeholder="Enter Movie or Series...", key='search_bar', on_change=reset_page)
-        if st.button('Clear', on_click=reset_page):
-            st.session_state.search_reset = True
-            st.rerun()
+        if filter_mode == 'Title':
+            search_name = st.text_input("🔍 Search (Title):", placeholder="Enter Movie or Series...", key='search_bar', on_change=reset_page)
+            if st.button('Clear', on_click=reset_page):
+                st.session_state.search_reset = True
+                st.rerun()
+        else:
+            actress_index = ACTRESS_OPTS.index(st.session_state.search_actress) if st.session_state.search_actress in ACTRESS_OPTS else 0
+
+            search_name = st.selectbox('Actress Name', options=ACTRESS_OPTS, key='search_actress')
+            if st.button('Clear', on_click=reset_page):
+                st.session_state.search_reset = True
+                st.rerun()
     playlist_filter = st.selectbox("Playlist:", options=PLAYLIST_OPTS, on_change=reset_page)
     info_filter = st.selectbox("Info:", options=INFO_OPTS_MIX, on_change=reset_page)
 
@@ -396,9 +417,12 @@ def display_film_grid(df, actress_df, device):
 
 
     if search_name:
-        mask = (filtered_df['Title'].str.contains(search_name, case=False, na=False) |
-                filtered_df['Actress Name'].str.contains(search_name, case=False, na=False))
-        filtered_df = filtered_df[mask]
+        if filter_mode == 'Title':
+            mask = filtered_df['Title'].str.contains(search_name, case=False, na=False)
+            filtered_df = filtered_df[mask]
+        elif filter_mode == 'Name' and search_name != 'All':
+            mask = filtered_df['Actress Name'].str.contains(search_name, case=False, na=False)
+            filtered_df = filtered_df[mask]
 
     if playlist_filter != 'All':
         filtered_df = filtered_df[filtered_df['Playlist'] == playlist_filter]  
@@ -2201,23 +2225,33 @@ def complex_film(conn, device):
                 except Exception as e:
                     st.write('ℹ️ Error : Update it from Data Bank ℹ️', e)
             with tab_cast_setting:
-                st.write('Under Construction')
                 if film['Cast Name'] != '--':
 
-                    act_part = st.radio('Role Part', options=['Main', 'Guest', 'Support', 'Cameo'], horizontal=True)
-
-                    if act_part == 'Main':
-                        max_val = len(other_cast_main)
-                        role_part_df = pd.DataFrame(other_cast_main)
-                    elif act_part == 'Support':
-                        max_val = len(other_cast_support)
-                        role_part_df = pd.DataFrame(other_cast_support)
-                    elif act_part == 'Guest':
-                        max_val = len(other_cast_guest)
-                        role_part_df = pd.DataFrame(other_cast_guest)
+                    if film['Type'] != 'TV Show':
+                        act_part = st.radio('Role Part', options=['Main', 'Guest', 'Support', 'Cameo'], horizontal=True)
+                        if act_part == 'Main':
+                            max_val = len(other_cast_main)
+                            role_part_df = pd.DataFrame(other_cast_main)
+                        elif act_part == 'Support':
+                            max_val = len(other_cast_support)
+                            role_part_df = pd.DataFrame(other_cast_support)
+                        elif act_part == 'Guest':
+                            max_val = len(other_cast_guest)
+                            role_part_df = pd.DataFrame(other_cast_guest)
+                        else:
+                            max_val = len(other_cast_cameo)
+                            role_part_df = pd.DataFrame(other_cast_cameo)
                     else:
-                        max_val = len(other_cast_cameo)
-                        role_part_df = pd.DataFrame(other_cast_cameo)
+                        act_part = st.radio('Role Part', options=['Main Host', 'Regular Member', 'Guest'], horizontal=True)
+                        if act_part == 'Main Host':
+                            max_val = len(other_cast_main_host)
+                            role_part_df = pd.DataFrame(other_cast_main_host)
+                        elif act_part == 'Regular Member':
+                            max_val = len(other_cast_regular_member)
+                            role_part_df = pd.DataFrame(other_cast_regular_member)
+                        elif act_part == 'Guest':
+                            max_val = len(other_cast_guest)
+                            role_part_df = pd.DataFrame(other_cast_guest)
                     
                     if max_val == 0:
                         max_val = 1
@@ -2256,18 +2290,25 @@ def complex_film(conn, device):
                         if st.button('Add Cast', width='stretch'):
                             if target_name != 'No One':
                                 row = idx+2
-                                if cast_worksheet().update(f'C{row}', target_name):
-                                    cast_df.at[idx, 'Target Name'] = target_name
-                                    row = index+2
+                                cast_df.at[idx, 'Target Name'] = target_name
+                                st.session_state.cast_df = cast_df
+                                cast_worksheet().update(f'C{row}', target_name)
+
+                                row = index+2
+                                if df['Actress Name'].loc[index] == 'No One':
+                                    df.at[index, 'Actress Name'] = target_name
+                                    df.at[index, 'Roles'] = f'{target_name}_ {act_info["Role"]}_ {act_info["Part"]}'
+                                else:
                                     df.at[index, 'Actress Name'] += f'_ {target_name}'
                                     df.at[index, 'Roles'] += f' ## {target_name}_ {act_info["Role"]}_ {act_info["Part"]}'
-                                    new_data = df.iloc[index].values.tolist()
-                                    if film_worksheet().update(f'A{row}:T{row}', [new_data]):
-                                        st.session_state.film_df = df
-                                        st.session_state.cast_df = cast_df
-                                        st.toast('✅ **:yellow[Cast]** Added Successfully!')
-                                        time.sleep(.5)
-                                        st.rerun()
+
+                                new_data = df.iloc[index].values.tolist()
+                                st.session_state.film_df = df
+                                film_worksheet().update(f'A{row}:T{row}', [new_data])
+
+                                st.toast('✅ **:yellow[Cast]** Added Successfully!')
+                                time.sleep(.5)
+                                st.rerun()
                             else:
                                 save_error = '⚠️ Target Name Cannot be "No One"'
                         
@@ -2352,10 +2393,17 @@ def complex_film(conn, device):
                 edited_synopsis = '⚠️ Synopsis not found!'
             
             if film['Cast'] != '--':
-                actress_list = [
-                    j.strip() for j in film['Cast'].split('_ ')
-                    if j.strip() in ACTRESS_OPTS
-                ]
+                actress_list = []
+                name_map = dict(zip(cast_df['Name'], cast_df['Target Name']))
+                for j in film['Cast'].split('_ '):
+                    name = j.strip()
+
+                    if name in name_map:
+                        target = name_map[name]
+                        act_name = target if target != '--' else name
+
+                        if act_name in ACTRESS_OPTS:
+                            actress_list.append(act_name)
             else:
                 actress_list = [
                     j.strip() for j in film['Actress Name'].split('_ ')
