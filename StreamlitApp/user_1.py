@@ -3085,11 +3085,11 @@ def complex_film(device):
             if ' Cast ' in s_part:
                 scrap_part = 'Cast'
             else:
-                srap_part = 'Film'
+                scrap_part = 'Film'
 
             s_types = soup.select_one(".film-subtitle span").get_text(strip=True)
             s_type = s_types.split(" ‧ ")
-            st.write(s_type[1])
+    
             if s_type[1] == 'Drama':
                 scrap_type = 'Drama'
             elif s_type[1] == 'Movie':
