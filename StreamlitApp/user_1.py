@@ -3227,11 +3227,28 @@ def complex_film(device):
                         st.warning('⚠️ Link is empty!')
 
         if file:
+            soup = BeautifulSoup(file, "html.parser")
+            s_type = soup.title.text
+            st.write(s_type)
+            if ' Cast ' in s_type:
+                st.write("Ini page Cast")
+            else:
+                st.write("Ini bukan Cast")
+
+            s_parts = soup.select_one(".film-subtitle span").get_text(strip=True)
+            s_part = s_parts.split(" ‧ ")
+            st.write(s_part[1])
+            if s_part[1] == 'Drama':
+                st.write('Ini Tipe Drama')
+            elif s_part[1] == 'Movie':
+                st.write('Ini Tipe Movie')
+            elif s_part[1] == 'TV Program':
+                st.write('Ini Tipe Tv Show')
+            
             if scrap_exe:
                 cast_results = []
                 new_actress_results = []
                 film_results = []
-                soup = BeautifulSoup(file, "html.parser")
 
                 title = soup.select_one("h1.film-title").get_text(strip=True)
 
