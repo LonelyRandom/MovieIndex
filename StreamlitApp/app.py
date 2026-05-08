@@ -25,7 +25,6 @@ if st.session_state.page == 'login':
         st.session_state.page = 'home'
         st.rerun()
     else:
-        # Tetap di login page, jangan rerun
         st.stop()  
 
 elif st.session_state.page == 'home':
