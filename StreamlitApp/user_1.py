@@ -3068,11 +3068,35 @@ def complex_film(device):
         st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Film Bank</h1>", unsafe_allow_html=True)
         display_film_bank(actress_df, drama_df, movie_df, tv_df, device)
     else:
+        if st.session_state.get('html_reset', False):
+            st.session_state.html_reset = False
+            st.session_state.html_bar = ''
+    
         st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Scrap</h1>", unsafe_allow_html=True)
-        scrap_part = st.radio("Scrap Part", options=["Film", "Cast"], horizontal=True)
-        scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
             
-        file = st.text_area("HTML TEXT", placeholder="Paste your html here...")
+        file = st.text_area("HTML TEXT", placeholder="Paste your html here...", key='html_bar')
+        if st.button('Clear HTML', width='stretch', type='primary'):
+            st.session_state.html_reset = True
+            st.rerun()
+
+        if file:
+            soup = BeautifulSoup(file, "html.parser")
+            s_part = soup.title.text
+            if ' Cast ' in s_part:
+                scrap_part = 'Cast'
+            else:
+                srap_part = 'Film'
+
+            s_types = soup.select_one(".film-subtitle span").get_text(strip=True)
+            s_type = s_types.split(" ‧ ")
+            st.write(s_type[1])
+            if s_type[1] == 'Drama':
+                scrap_type = 'Drama'
+            elif s_type[1] == 'Movie':
+                scrap_type = 'Movie'
+            elif s_type[1] == 'TV Program':
+                scrap_type = 'TV Show'
+                
         target = st.selectbox('Film Target', options=TITLE_OPTS, width='stretch')
         if target == 'New':
             film_link = st.text_input('MDL Link', width='stretch', placeholder='Input your new film link here...')
@@ -3227,24 +3251,6 @@ def complex_film(device):
                         st.warning('⚠️ Link is empty!')
 
         if file:
-            soup = BeautifulSoup(file, "html.parser")
-            s_type = soup.title.text
-            st.write(s_type)
-            if ' Cast ' in s_type:
-                st.write("Ini page Cast")
-            else:
-                st.write("Ini bukan Cast")
-
-            s_parts = soup.select_one(".film-subtitle span").get_text(strip=True)
-            s_part = s_parts.split(" ‧ ")
-            st.write(s_part[1])
-            if s_part[1] == 'Drama':
-                st.write('Ini Tipe Drama')
-            elif s_part[1] == 'Movie':
-                st.write('Ini Tipe Movie')
-            elif s_part[1] == 'TV Program':
-                st.write('Ini Tipe Tv Show')
-            
             if scrap_exe:
                 cast_results = []
                 new_actress_results = []
