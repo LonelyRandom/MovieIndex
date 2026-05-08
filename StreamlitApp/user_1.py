@@ -3507,14 +3507,36 @@ def complex_actress(device):
             st.image(film['Picture'], width=200)
         
         st.markdown('### Actress')
-        actress_list = film['Actress Name'].split(', ')
-        matching_actresses = filtered_actress_df[filtered_actress_df['Name (Given)'].isin(actress_list)]
+        actress_list = film['Actress Name'].split('_ ')
+        if film['Type'] != 'TV Show':
+            role_list = film['Roles'].split(' ## ')
+            role_dict = []
+            for roles in role_list:
+                role = roles.split('_ ')
+                role_dict.append({
+                    'Name': role[0],
+                    'Role': role[1],
+                    'Part': role[2]
+                })
+            role_df = pd.DataFrame(role_dict)
+
+        matching_actresses = filtered_actress_df[filtered_actress_df['Name (Stage)'].isin(actress_list)]
+
         for i in range(0,len(matching_actresses)):
+            if film['Type'] != 'TV Show':
+                info = role_df[role_df['Name'] == matching_actresses['Name (Stage)'].iloc[i]].iloc[0]
+                act_name = info['Name']
+                act_role = info['Role']
+                act_part = info['Part']
+            
             with st.container(horizontal=True):
                 st.image(matching_actresses['Picture'].iloc[i], width=80)
                 with st.container():
-                    st.markdown(f"### {matching_actresses['Name (Given)'].iloc[i]}")
-                    # st.markdown(f"### {matching_actresses['Name (Given)'].iloc[i]}")
+                    if film['Type'] != 'TV Show':
+                        st.markdown(f"### {act_name}")
+                        st.write(f"{act_role} - {act_part}")
+                    else:
+                        st.markdown(f'### {matching_actresses["Name (Stage)"].iloc[i]}')
         with st.container(horizontal=True):
             with st.container():
                 st.markdown('### Status')
@@ -3536,6 +3558,8 @@ def complex_actress(device):
                 st.markdown('### Playlist')
                 st.warning(film['Playlist']) 
         
+        st.markdown('---')
+        st.markdown('## Rating')
         with st.container(key='star_rating'):
             if film['Rating'] == '?':
                 st.write('🌑🌑🌑🌑🌑')
@@ -3544,7 +3568,8 @@ def complex_actress(device):
                     st.write('🌕' * int(film["Rating"]) + '🌑' * (5-int(film['Rating'])))
                 else:
                     st.write('🌕' * int(film["Rating"]) + '🌗' + '🌑' * (5-(int(film['Rating'])+1)))
-
+        
+        st.markdown('---')
         if st.button('❌ Close', width='stretch'):
             st.session_state.film_detail = False
             st.session_state.viewing_index = st.session_state.actress_index
