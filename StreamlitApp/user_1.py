@@ -3084,6 +3084,9 @@ def complex_film(device):
         if "new_actress_results" not in st.session_state:
             st.session_state.new_actress_results = []
 
+        cast_df = st.session_state.cast_df.copy()
+        actress_df = st.session_state.actress_df.copy()
+        
         st.markdown('---')
         with st.container(horizontal=True):   
             show_scrap = st.button("Show", width='stretch')
@@ -3106,13 +3109,32 @@ def complex_film(device):
                     st.write(film_scrap_df)
                 
         if save_scrap:
+            cast_results = st.session_state.cast_results.copy()
             if scrap_part == "Cast":
                 cast_text = []
                 cast_name_text = []
-                for i in range(len(st.session_state.cast_results)):
-                    cast_text.append(st.session_state.cast_results[i]["Name"])
-                    cast_name_text.append(f"{st.session_state.cast_results[i]['Link']}_ {st.session_state.cast_results[i]['Role']}_ {st.session_state.cast_results[i]['Part']}")
+                actress_name_text = []
+                actress_name_role_text = []
+                selected_actress = []
+                selected_actress_roles = []
+                for i in range(len(cast_results)):
+                    cast_text.append(cast_results[i]["Name"])
+                    if cast_results[i]["Name"] in cast_df["Name"].values:
+                        selected_cast_df = cast_df[cast_df["Name"] == cast_results[i]["Name"]]
+                        if selected_cast_df["Target Name"].iloc[0] != '--':
+                            selected_actress.append(selected_cast_df["Target Name"].iloc[0])
+                            selected_actress_roles.append(f'{selected_cast_df["Target Name"].iloc[0]}_ --_ --')
+                            
+                        else:
+                            selected_actress.append(cast_results[i]["Name"])
+                            selected_actress_roles.append(f'{cast_results[i]["Name"]}_ --_ --')
 
+                    cast_name_text.append(f"{cast_results[i]['Link']}_ {cast_results[i]['Role']}_ {cast_results[i]['Part']}")
+
+                actress_name_df = actress_df[actress_df["Name (Stage)"].isin(selected_actress)]
+                actress_name_text = '_ '.join(actress_name_df["Name (Stage)"].values.tolist())
+                actress_name_role_text = ' ## '.join(selected_actress_roles)
+                        
                 cast_text = "_ ".join(cast_text)
                 cast_name_text = " ## ".join(cast_name_text)
 
@@ -3121,9 +3143,17 @@ def complex_film(device):
                     row = idx + 2
                     df.at[idx, 'Cast'] = cast_text
                     df.at[idx, 'Cast Name'] = cast_name_text
+                    df.at[idx, 'Actress Name'] = actress_name_text
+                    df.at[idx, 'Roles'] = actress_name_role_text
 
                     st.session_state.film_df = df
-                    film_worksheet().update(f'R{row}:S{row}', [[cast_text, cast_name_text]])
+                    cells = [
+                        {"range": f"K{row}", "values": [[actress_name_text]]},
+                        {"range": f"O{row}", "values": [[actress_name_role_text]]},
+                        {"range": f"R{row}", "values": [[cast_text]]},
+                        {"range": f"S{row}", "values": [[cast_name_text]]},
+                    ]
+                    film_worksheet().batch_update(cells)
                     st.toast('✅️ Cast and Cast Name added successfully!')
                     time.sleep(.5)
                     if st.session_state.new_actress_results:
