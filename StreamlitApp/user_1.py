@@ -3189,6 +3189,7 @@ def complex_film(device):
                         final_df = pd.concat([cast_df, new_actress_scrap_df], ignore_index=True)
                         st.session_state.cast_df = final_df
                         cast_worksheet().update(f"A{start_row}:D{end_row}", new_actress_data)
+                        st.session_state.html_reset = True
                 else:
                     st.warning("No selected film")
 
@@ -3210,6 +3211,7 @@ def complex_film(device):
                     st.session_state.film_df = df
                     st.toast('✅️ Scrap added successfully!')
                     time.sleep(.5)
+                    st.session_state.html_reset = True
                 else:
                     if film_link:
                         if st.session_state.film_results[0]['Type'] == 'Series':
@@ -3247,6 +3249,7 @@ def complex_film(device):
                         st.session_state.film_df = df
                         st.toast('✅️ Scrap added successfully!')
                         time.sleep(.5)
+                        st.session_state.html_reset = True
                     else:
                         st.warning('⚠️ Link is empty!')
 
