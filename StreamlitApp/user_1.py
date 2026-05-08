@@ -3364,6 +3364,8 @@ def complex_film(device):
 
             else:
                 st.success('✅ HTML Detected! Ready to scrap!')
+                st.info(f'ℹ️ Scrap Part Detected : {scrap_part}')
+                st.info(f'ℹ️ Scrap Type Detected : {scrap_type}')
         else:
             st.warning("No HTML detected!")
     st.markdown('---')
