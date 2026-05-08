@@ -399,8 +399,6 @@ def display_film_grid(df, actress_df, device):
                 st.session_state.search_reset = True
                 st.rerun()
         else:
-            actress_index = ACTRESS_OPTS.index(st.session_state.search_actress) if st.session_state.search_actress in ACTRESS_OPTS else 0
-
             search_name = st.selectbox('Actress Name', options=ACTRESS_OPTS, key='search_actress')
             if st.button('Clear', on_click=reset_page):
                 st.session_state.search_reset = True
