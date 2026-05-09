@@ -3110,8 +3110,6 @@ def complex_film(device):
                 scrap_type = 'TV Show'
                 
         target = st.selectbox('Film Target', options=TITLE_OPTS, width='stretch')
-        if target == 'New':
-            film_link = st.text_input('MDL Link', width='stretch', placeholder='Input your new film link here...')
         
         if "cast_results" not in st.session_state:
             st.session_state.cast_results = []
@@ -3212,13 +3210,15 @@ def complex_film(device):
                     cells = [
                         {"range": f"E{row}", "values": [[st.session_state.film_results[0]['Type']]]},
                         {"range": f"G{row}", "values": [[st.session_state.film_results[0]['Episode']]]},
-                        {"range": f"N{row}", "values": [[st.session_state.film_results[0]['Synopsis']]]}
+                        {"range": f"N{row}", "values": [[st.session_state.film_results[0]['Synopsis']]]},
+                        {"range": f"T{row}", "values": [[st.session_state.film_results[0]['Link']]]}
                     ]
 
                     film_worksheet().batch_update(cells)
                     df.at[idx, 'Type'] = st.session_state.film_results[0]['Type']
                     df.at[idx, 'Episode'] = st.session_state.film_results[0]['Episode']
                     df.at[idx, 'Synopsis'] = st.session_state.film_results[0]['Synopsis']
+                    df.at[idx, 'Link'] = sr.session_state.film_results[0]['Link']
 
                     st.session_state.film_df = df
                     st.toast('✅️ Scrap added successfully!')
@@ -3253,7 +3253,7 @@ def complex_film(device):
                             st.session_state.film_results[0]['Aired'],
                             '--',
                             '--',
-                            film_link
+                            st.session_state.film_results[0]['Link']
                         ]
 
                         film_worksheet().append_row(new_row)
@@ -3329,16 +3329,18 @@ def complex_film(device):
                         st.session_state.cast_results = cast_results
                         st.session_state.new_actress_results = new_actress_results
                 else:
+                    st.markdown('---')
                     film_link = soup.find("link", rel="canonical")
                     film_ref = film_link.get("href") if film_link else '--'
                     st.write(film_ref)
+                    
                     synopsis_container = soup.find("div", class_="show-synopsis").find("p")
                     synopsis = synopsis_container.get_text(" ", strip=True).replace("Edit Translation","")
                     st.write(synopsis)
+                    
                     for h3 in headers:
                         if h3.get_text(strip=True) == "Details":
                             next_div = h3.find_parent("div").find_next_sibling("div")
-        
                             if next_div:
                                 li_items = next_div.find_all("li")
                                 for li in li_items:
@@ -3373,7 +3375,8 @@ def complex_film(device):
                         "Type" : film_type,
                         "Country" : film_country,
                         "Episode" : film_episode,
-                        "Aired" : film_release_date
+                        "Aired" : film_release_date,
+                        "Link" : film_ref
                     })
 
                     st.session_state.film_results = film_results
