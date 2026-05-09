@@ -3357,15 +3357,13 @@ def complex_film(device):
                                         film_country = label.next_sibling.strip()
                                         st.write(film_country)
                                     elif label.get_text(strip=True) == 'Episodes:':
-                                        if scrap_type != 'Movie':
-                                            film_episode = label.next_sibling.strip()
-                                        else:
-                                            film_episode = '?'
+                                        film_episode = label.next_sibling.strip()
                                         st.write(film_episode)
                                     elif label.get_text(strip=True) in ['Aired:', 'Airs:', 'Release Date:']:
                                         film_release_date = label.next_sibling.strip()
                                         st.write(film_release_date)
-
+                    if scrap_type == 'Movie':
+                        film_episode = '?'
                     film_results.append({
                         "Title" : title,
                         "Synopsis" : synopsis,
