@@ -3329,6 +3329,9 @@ def complex_film(device):
                         st.session_state.cast_results = cast_results
                         st.session_state.new_actress_results = new_actress_results
                 else:
+                    film_link = soup.find("link", rel="canonical")
+                    film_ref = film_link.get("href") if film_link else '--'
+                    st.write(film_ref)
                     synopsis_container = soup.find("div", class_="show-synopsis").find("p")
                     synopsis = synopsis_container.get_text(" ", strip=True).replace("Edit Translation","")
                     st.write(synopsis)
