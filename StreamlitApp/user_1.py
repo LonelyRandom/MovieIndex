@@ -3218,7 +3218,7 @@ def complex_film(device):
                     df.at[idx, 'Type'] = st.session_state.film_results[0]['Type']
                     df.at[idx, 'Episode'] = st.session_state.film_results[0]['Episode']
                     df.at[idx, 'Synopsis'] = st.session_state.film_results[0]['Synopsis']
-                    df.at[idx, 'Link'] = sr.session_state.film_results[0]['Link']
+                    df.at[idx, 'Link'] = st.session_state.film_results[0]['Link']
 
                     st.session_state.film_df = df
                     st.toast('✅️ Scrap added successfully!')
