@@ -3080,11 +3080,35 @@ def complex_film(device):
         st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Film Bank</h1>", unsafe_allow_html=True)
         display_film_bank(actress_df, drama_df, movie_df, tv_df, device)
     else:
+        if st.session_state.get('html_reset', False):
+            st.session_state.html_reset = False
+            st.session_state.html_bar = ''
+    
         st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Scrap</h1>", unsafe_allow_html=True)
-        scrap_part = st.radio("Scrap Part", options=["Film", "Cast"], horizontal=True)
-        scrap_type = st.radio("Scrap Type", options=["Drama", "Movie", "TV Show"], horizontal=True)
             
-        file = st.text_area("HTML TEXT", placeholder="Paste your html here...")
+        file = st.text_area("HTML TEXT", placeholder="Paste your html here...", key='html_bar')
+        if st.button('Clear HTML', width='stretch', type='primary'):
+            st.session_state.html_reset = True
+            st.rerun()
+
+        if file:
+            soup = BeautifulSoup(file, "html.parser")
+            s_part = soup.title.text
+            if ' Cast ' in s_part:
+                scrap_part = 'Cast'
+            else:
+                scrap_part = 'Film'
+
+            s_types = soup.select_one(".film-subtitle span").get_text(strip=True)
+            s_type = s_types.split(" ‧ ")
+    
+            if s_type[1] == 'Drama':
+                scrap_type = 'Drama'
+            elif s_type[1] == 'Movie':
+                scrap_type = 'Movie'
+            elif s_type[1] == 'TV Program':
+                scrap_type = 'TV Show'
+                
         target = st.selectbox('Film Target', options=TITLE_OPTS, width='stretch')
         if target == 'New':
             film_link = st.text_input('MDL Link', width='stretch', placeholder='Input your new film link here...')
@@ -3096,6 +3120,9 @@ def complex_film(device):
         if "new_actress_results" not in st.session_state:
             st.session_state.new_actress_results = []
 
+        cast_df = st.session_state.cast_df.copy()
+        actress_df = st.session_state.actress_df.copy()
+        
         st.markdown('---')
         with st.container(horizontal=True):   
             show_scrap = st.button("Show", width='stretch')
@@ -3118,13 +3145,32 @@ def complex_film(device):
                     st.write(film_scrap_df)
                 
         if save_scrap:
+            cast_results = st.session_state.cast_results.copy()
             if scrap_part == "Cast":
                 cast_text = []
                 cast_name_text = []
-                for i in range(len(st.session_state.cast_results)):
-                    cast_text.append(st.session_state.cast_results[i]["Name"])
-                    cast_name_text.append(f"{st.session_state.cast_results[i]['Link']}_ {st.session_state.cast_results[i]['Role']}_ {st.session_state.cast_results[i]['Part']}")
+                actress_name_text = []
+                actress_name_role_text = []
+                selected_actress = []
+                selected_actress_roles = []
+                for i in range(len(cast_results)):
+                    cast_text.append(cast_results[i]["Name"])
+                    if cast_results[i]["Name"] in cast_df["Name"].values:
+                        selected_cast_df = cast_df[cast_df["Name"] == cast_results[i]["Name"]]
+                        if selected_cast_df["Target Name"].iloc[0] != '--':
+                            selected_actress.append(selected_cast_df["Target Name"].iloc[0])
+                            selected_actress_roles.append(f'{selected_cast_df["Target Name"].iloc[0]}_ --_ --')
+                            
+                        else:
+                            selected_actress.append(cast_results[i]["Name"])
+                            selected_actress_roles.append(f'{cast_results[i]["Name"]}_ --_ --')
 
+                    cast_name_text.append(f"{cast_results[i]['Link']}_ {cast_results[i]['Role']}_ {cast_results[i]['Part']}")
+
+                actress_name_df = actress_df[actress_df["Name (Stage)"].isin(selected_actress)]
+                actress_name_text = '_ '.join(actress_name_df["Name (Stage)"].values.tolist())
+                actress_name_role_text = ' ## '.join(selected_actress_roles)
+                        
                 cast_text = "_ ".join(cast_text)
                 cast_name_text = " ## ".join(cast_name_text)
 
@@ -3133,9 +3179,17 @@ def complex_film(device):
                     row = idx + 2
                     df.at[idx, 'Cast'] = cast_text
                     df.at[idx, 'Cast Name'] = cast_name_text
+                    df.at[idx, 'Actress Name'] = actress_name_text
+                    df.at[idx, 'Roles'] = actress_name_role_text
 
                     st.session_state.film_df = df
-                    film_worksheet().update(f'R{row}:S{row}', [[cast_text, cast_name_text]])
+                    cells = [
+                        {"range": f"K{row}", "values": [[actress_name_text]]},
+                        {"range": f"O{row}", "values": [[actress_name_role_text]]},
+                        {"range": f"R{row}", "values": [[cast_text]]},
+                        {"range": f"S{row}", "values": [[cast_name_text]]},
+                    ]
+                    film_worksheet().batch_update(cells)
                     st.toast('✅️ Cast and Cast Name added successfully!')
                     time.sleep(.5)
                     if st.session_state.new_actress_results:
@@ -3147,6 +3201,7 @@ def complex_film(device):
                         final_df = pd.concat([cast_df, new_actress_scrap_df], ignore_index=True)
                         st.session_state.cast_df = final_df
                         cast_worksheet().update(f"A{start_row}:D{end_row}", new_actress_data)
+                        st.session_state.html_reset = True
                 else:
                     st.warning("No selected film")
 
@@ -3168,6 +3223,7 @@ def complex_film(device):
                     st.session_state.film_df = df
                     st.toast('✅️ Scrap added successfully!')
                     time.sleep(.5)
+                    st.session_state.html_reset = True
                 else:
                     if film_link:
                         if st.session_state.film_results[0]['Type'] == 'Series':
@@ -3205,6 +3261,7 @@ def complex_film(device):
                         st.session_state.film_df = df
                         st.toast('✅️ Scrap added successfully!')
                         time.sleep(.5)
+                        st.session_state.html_reset = True
                     else:
                         st.warning('⚠️ Link is empty!')
 
@@ -3213,7 +3270,6 @@ def complex_film(device):
                 cast_results = []
                 new_actress_results = []
                 film_results = []
-                soup = BeautifulSoup(file, "html.parser")
 
                 title = soup.select_one("h1.film-title").get_text(strip=True)
 
@@ -3323,6 +3379,8 @@ def complex_film(device):
 
             else:
                 st.success('✅ HTML Detected! Ready to scrap!')
+                st.info(f'ℹ️ Scrap Part Detected : {scrap_part}')
+                st.info(f'ℹ️ Scrap Type Detected : {scrap_type}')
         else:
             st.warning("No HTML detected!")
     st.markdown('---')
