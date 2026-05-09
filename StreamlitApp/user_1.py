@@ -514,9 +514,9 @@ def display_film_grid(df, actress_df, device):
                     real_index = rows_to_display.index[i]
 
                     if film['Status'] == 'Recommended':
-                        title_background_color = 'yellow'
+                        title_background_color = '826C22'
                     else:
-                        title_background_color = 'gray'
+                        title_background_color = '374151'
 
                     
                     with st.container(width=device_width):
@@ -531,7 +531,7 @@ def display_film_grid(df, actress_df, device):
                                 align-items: center;
                                 margin-bottom: 10px;
                                 border-radius: 5px;
-                                border: 1px solid #374151; 
+                                border: 1px solid #{title_background_color}; 
                             ">
                                 <img src="{film['Picture']}" 
                                     style="
@@ -546,7 +546,7 @@ def display_film_grid(df, actress_df, device):
                         title = film['Title']
                         if len(title) > 30:
                             title = title[:30] + "..."
-                        if st.button(f':{title_background_color}-background[{title}]', key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
+                        if st.button(f':gray-background[{title}]', key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
                             st.session_state.viewing_film_index = real_index
                             st.rerun()
                             
@@ -2378,18 +2378,22 @@ def complex_film(device):
             if edited_synopsis == '':
                 edited_synopsis = '⚠️ Synopsis not found!'
             
-            if film['Cast'] != '--':
+            if film['Cast Name'] != '--':
                 actress_list = []
-                name_map = dict(zip(cast_df['Name'], cast_df['Target Name']))
-                for j in film['Cast'].split('_ '):
-                    name = j.strip()
+                name_map = cast_df.set_index('Link')[['Name', 'Target Name']].to_dict('index')
+                for i in film['Cast Name'].split(' ## '):
+                    roles = i.strip()
+                    role = roles.split('_ ')
+                    
+                    link = role[0]
 
-                    if name in name_map:
-                        target = name_map[name]
-                        act_name = target if target != '--' else name
+                    if link in name_map:
+                        if link in st.session_state.actress_df['MDL'].values:
+                            target = name_map[link]['Target Name']
+                            act_name = target if target != '--' else name_map[link]['Name']
 
-                        if act_name in ACTRESS_OPTS:
-                            actress_list.append(act_name)
+                            if act_name in ACTRESS_OPTS:
+                                actress_list.append(act_name)
             else:
                 actress_list = [
                     j.strip() for j in film['Actress Name'].split('_ ')
@@ -2614,6 +2618,8 @@ def complex_film(device):
                                     st.stop()
                             else:
                                 final_picture_url = new_pic
+                            
+                            st.toast('ℹ️ Photo Changed')
 
                         # kalau ganti foto dan code
                         elif (new_pic and new_pic != '') and (film['Title'] != edited_title):
@@ -2631,6 +2637,7 @@ def complex_film(device):
                                     st.stop()
                             else:
                                 final_picture_url = new_pic
+                            st.toast('ℹ️ Photo and Title Changed')
                         # kalau cuma ganti code
                         elif not new_pic and (film['Title'] != edited_title):
                             if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
@@ -2642,8 +2649,13 @@ def complex_film(device):
                                 except Exception as e:
                                     st.warning(f'Could not rename old image: {e}')
                                     st.stop()
+                            else:
+                                final_picture_url = film['Picture']
+
+                            st.toast('ℹ️ Title Changed')
                         else:
                             final_picture_url = film['Picture']
+                            st.toast('ℹ️ Nothing Changed')
 
                         if film['Title'] != edited_title and edited_title in df['Title'].values:
                             st.warning(f'⚠️ Title {edited_title} already exist in database!')
@@ -4761,6 +4773,10 @@ def complex_actress(device):
                 with st.container(horizontal=True):
                     for idx in rows_to_display.index:
                         actress = df.iloc[idx]
+                        if actress['Favourite'] == True:
+                            border_color = '947B27'
+                        else:
+                            border_color = '374151'
                         with st.container(width=img_width+5):
                             st.markdown(f"""
                                 <div style="
@@ -4773,7 +4789,7 @@ def complex_actress(device):
                                 align-items: center;
                                 margin: 0 auto 8px auto;
                                 background: white;
-                                border: 2px solid #374151;
+                                border: 2px solid #{border_color};
                             ">
                                 <img src="{actress['Picture']}" 
                                     style="
