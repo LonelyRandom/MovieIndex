@@ -2638,6 +2638,7 @@ def complex_film(device):
                             else:
                                 final_picture_url = new_pic
                             st.toast('ℹ️ Photo and Title Changed')
+                        
                         # kalau cuma ganti code
                         elif not new_pic and (film['Title'] != edited_title):
                             if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
@@ -2651,7 +2652,6 @@ def complex_film(device):
                                     st.stop()
                             else:
                                 final_picture_url = film['Picture']
-
                             st.toast('ℹ️ Title Changed')
                         else:
                             final_picture_url = film['Picture']
@@ -4695,7 +4695,7 @@ def complex_actress(device):
 
         # Filter DataFrame berdasarkan status
         filtered_df = df.copy()
-        filtered_df = filtered_df.sort_values(by='Name (Given)', ascending=True)
+        filtered_df = filtered_df.sort_values(by='Name (Stage)', ascending=True)
 
         # Buat kondisi filter
         review_conditions = []
@@ -4835,6 +4835,7 @@ def complex_actress(device):
                             border_color = '947B27'
                         else:
                             border_color = '374151'
+
                         with st.container(width=img_width+5):
                             st.markdown(f"""
                                 <div style="
