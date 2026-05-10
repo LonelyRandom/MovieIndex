@@ -3155,20 +3155,24 @@ def complex_film(device):
                     cast_text.append(cast_results[i]["Name"])
                     if cast_results[i]["Name"] in cast_df["Name"].values:
                         selected_cast_df = cast_df[cast_df["Name"] == cast_results[i]["Name"]]
-                        if selected_cast_df["Target Name"].iloc[0] != '--':
-                            selected_actress.append(selected_cast_df["Target Name"].iloc[0])
-                            selected_actress_roles.append(f'{selected_cast_df["Target Name"].iloc[0]}_ --_ --')
-                            
-                        else:
-                            selected_actress.append(cast_results[i]["Name"])
-                            selected_actress_roles.append(f'{cast_results[i]["Name"]}_ --_ --')
+                        if selected_cast_df["Link"].iloc[0] in st.session_state.actress_df['MDL'].values:
+                            if selected_cast_df["Target Name"].iloc[0] != '--':
+                                selected_actress.append(selected_cast_df["Target Name"].iloc[0])
+                                selected_actress_roles.append(f'{selected_cast_df["Target Name"].iloc[0]}_ --_ --')
+                            else:
+                                selected_actress.append(cast_results[i]["Name"])
+                                selected_actress_roles.append(f'{cast_results[i]["Name"]}_ --_ --')
 
                     cast_name_text.append(f"{cast_results[i]['Link']}_ {cast_results[i]['Role']}_ {cast_results[i]['Part']}")
 
-                actress_name_df = actress_df[actress_df["Name (Stage)"].isin(selected_actress)]
-                actress_name_text = '_ '.join(actress_name_df["Name (Stage)"].values.tolist())
-                actress_name_role_text = ' ## '.join(selected_actress_roles)
-                        
+                if selected_actress and selected_actress_roles:
+                    actress_name_df = actress_df[actress_df["Name (Stage)"].isin(selected_actress)]
+                    actress_name_text = '_ '.join(actress_name_df["Name (Stage)"].values.tolist())
+                    actress_name_role_text = ' ## '.join(selected_actress_roles)
+                else:
+                    actress_name_text = 'No One'
+                    actress_name_role_text = 'Unqualified'
+                                
                 cast_text = "_ ".join(cast_text)
                 cast_name_text = " ## ".join(cast_name_text)
 
@@ -3225,7 +3229,7 @@ def complex_film(device):
                     time.sleep(.5)
                     st.session_state.html_reset = True
                 else:
-                    if film_link:
+                    if st.session_state.film_results[0]['Link']:
                         if st.session_state.film_results[0]['Type'] == 'Series':
                             playlist = st.session_state.film_results[0]['Country'] + ' Series'
                         elif st.session_state.film_results[0]['Type'] == 'Movie':
@@ -3281,51 +3285,54 @@ def complex_film(device):
                         section_list = ["Main Host", "Regular Member", "Guest"]
                     else:
                         section_list = ["Guest Role", "Support Role", "Main Role", "Cameo"]
-                    for h3 in headers:
-                        if h3.get_text(strip=True) in section_list:
-                            ul = h3.find_next("ul")
-
-                            for item in ul.find_all("li"):
-                                name_tag = item.select_one("div.p-a-0 > a.text-primary")
-                                name = name_tag.get_text(strip=True) if name_tag else "-"
-                                profile_link = "https://mydramalist.com" + name_tag["href"]
-
-                                img = item.select_one("img")["src"]
-    
-                                small_tag = item.select_one("small")
-                                a_tag = small_tag.find("a") if small_tag else None
-    
-                                character = (
-                                    a_tag["title"] if a_tag and a_tag.has_attr("title")
-                                    else small_tag["title"] if small_tag and small_tag.has_attr("title")
-                                    else "-"
-                                )
-        
-                                role = item.select_one("small.text-muted")
-                                role_part = role.get_text(strip=True) if role else "-"
-
-                                st.markdown('---')
-                                st.write(name)
-                                st.write(profile_link)
-                                st.image(img, width=80)
-                                st.write(character)
-                                st.write(role_part)
-
-                                cast_results.append({
-                                    "Name": name,
-                                    "Link": profile_link,
-                                    "Role": character,
-                                    "Part": role_part 
-                                })
-
-                                if profile_link not in cast_df['Link'].values.tolist():
-                                    new_actress_results.append({
-                                        "Name" : name,
-                                        "Picture" : img.replace("s.jpg","c.jpg"),
-                                        "Target Name" : "--",
-                                        "Link" : profile_link
-                                    })
                     
+                    with st.container(horizontal=True):
+                        for h3 in headers:
+                            if h3.get_text(strip=True) in section_list:
+                                ul = h3.find_next("ul")
+
+                                for item in ul.find_all("li"):
+                                    name_tag = item.select_one("div.p-a-0 > a.text-primary")
+                                    name = name_tag.get_text(strip=True) if name_tag else "-"
+                                    profile_link = "https://mydramalist.com" + name_tag["href"]
+
+                                    img = item.select_one("img")["src"]
+        
+                                    small_tag = item.select_one("small")
+                                    a_tag = small_tag.find("a") if small_tag else None
+        
+                                    character = (
+                                        a_tag["title"] if a_tag and a_tag.has_attr("title")
+                                        else small_tag["title"] if small_tag and small_tag.has_attr("title")
+                                        else "-"
+                                    )
+            
+                                    role = item.select_one("small.text-muted")
+                                    role_part = role.get_text(strip=True) if role else "-"
+
+                                    with st.container():
+                                        st.markdown('---')
+                                        st.write(name)
+                                        st.write(profile_link)
+                                        st.image(img, width=80)
+                                        st.write(character)
+                                        st.write(role_part)
+
+                                    cast_results.append({
+                                        "Name": name,
+                                        "Link": profile_link,
+                                        "Role": character,
+                                        "Part": role_part 
+                                    })
+
+                                    if profile_link not in cast_df['Link'].values.tolist():
+                                        new_actress_results.append({
+                                            "Name" : name,
+                                            "Picture" : img.replace("s.jpg","c.jpg"),
+                                            "Target Name" : "--",
+                                            "Link" : profile_link
+                                        })
+                        
                         st.session_state.cast_results = cast_results
                         st.session_state.new_actress_results = new_actress_results
                 else:
