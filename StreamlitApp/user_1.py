@@ -138,48 +138,6 @@ def actress_worksheet():
     return worksheet
 
 @st.cache_resource()
-def drama_worksheet():
-    client = get_gsheet_client()
-
-    spreadsheet = client.open(
-        st.secrets["indicators"]["SPREAD_TITLE"]
-    )
-
-    worksheet = spreadsheet.worksheet(
-        st.secrets["indicators"]["USER_1_DRAMA"]
-    )
-
-    return worksheet
-
-@st.cache_resource()
-def movie_worksheet():
-    client = get_gsheet_client()
-
-    spreadsheet = client.open(
-        st.secrets["indicators"]["SPREAD_TITLE"]
-    )
-
-    worksheet = spreadsheet.worksheet(
-        st.secrets["indicators"]["USER_1_MOVIE"]
-    )
-
-    return worksheet
-
-@st.cache_resource()
-def tv_worksheet():
-    client = get_gsheet_client()
-
-    spreadsheet = client.open(
-        st.secrets["indicators"]["SPREAD_TITLE"]
-    )
-
-    worksheet = spreadsheet.worksheet(
-        st.secrets["indicators"]["USER_1_TV"]
-    )
-
-    return worksheet
-
-@st.cache_resource()
 def cast_worksheet():
     client = get_gsheet_client()
 
@@ -263,52 +221,6 @@ def init_dataframe_film():
         return df
     else:
         return st.session_state.film_df    
-
-def init_dataframe_drama():
-    """Inisialisasi DataFrame di session state"""
-    if "drama_df" not in st.session_state:
-        data = drama_worksheet().get_all_records()
-        df = pd.DataFrame(data)
-        if df.empty:
-            df = pd.DataFrame(columns=[
-                'Picture', 'Title', 'Episode', 'Actress', 'Role', 'Year', 'Link',
-                'Synopsis', 'Country', 'Aired', 'Cast', 'Cast Name', 'Target Film'
-            ])
-        
-        st.session_state.drama_df = df
-        return df
-    else:
-        return st.session_state.drama_df    
-
-def init_dataframe_movie():
-    """Inisialisasi DataFrame di session state"""
-    if "movie_df" not in st.session_state:
-        data = movie_worksheet().get_all_records()
-        df = pd.DataFrame(data)
-        if df.empty:
-            df = pd.DataFrame(columns=[
-                'Picture', 'Title', 'Actress', 'Role', 'Year', 'Link'
-            ])
-        
-        st.session_state.movie_df = df
-        return df
-    else:
-        return st.session_state.movie_df    
-
-def init_dataframe_tv():
-    """Inisialisasi DataFrame di session state"""
-    if "tv_df" not in st.session_state:
-        data = tv_worksheet().get_all_records()
-        df = pd.DataFrame(data)
-        if df.empty:
-            df = pd.DataFrame(columns=[
-                'Picture', 'Title', 'Episode', 'Actress', 'Role', 'Year', 'Link'
-            ])
-        
-        st.session_state.tv_df = df
-        return df
-    else:
-        return st.session_state.tv_df   
 
 def init_dataframe_cast():
     """Inisialisasi DataFrame di session state"""
@@ -604,228 +516,6 @@ def display_film_grid(df, actress_df, device):
     else:
         st.info('No film match the filter')
 
-def display_film_bank(actress_df, drama_df, movie_df, tv_df, device):
-    ACTRESS_OPTS = ['No One'] + sorted(
-        actress_df.loc[actress_df['Name (Given)'] != 'No One', 'Name (Given)']
-        .dropna()
-        .unique()
-        .tolist()
-    )
-
-    if 'bank_page' not in st.session_state:
-        st.session_state.bank_page = 1
-
-    filtered_drama_df = drama_df.copy()
-    filtered_movie_df = movie_df.copy()
-    filtered_tv_df = tv_df.copy()
-
-    selected_actress = st.selectbox('Actress', options=ACTRESS_OPTS, width='stretch', on_change=reset_bank_page, key='bank_actress')
-
-    selected_part = st.radio('Section', options=['Drama', 'Movie', 'TV Show'], horizontal=True, on_change=reset_bank_page, key='bank_section')
-
-    if selected_actress != 'No One':
-        filtered_drama_df = filtered_drama_df[filtered_drama_df['Actress'].str.contains(selected_actress, na=False)]
-        filtered_movie_df = filtered_movie_df[filtered_movie_df['Actress'].str.contains(selected_actress, na=False)]
-        filtered_tv_df = filtered_tv_df[filtered_tv_df['Actress'].str.contains(selected_actress, na=False)]
-
-    if 'img_size' not in st.session_state: # useless
-        st.session_state.img_size = 'Device 1'
-    
-    if device == 'Device 1':
-        device_width = 115
-        device_height = 163
-    else:
-        device_width = 106
-        device_height = 150
-    
-    if selected_part == 'Drama':
-        filtered_df = filtered_drama_df
-    elif selected_part == 'Movie':
-        filtered_df = filtered_movie_df
-    else:
-        filtered_df = filtered_tv_df
-
-    total_pages = max(1, (len(filtered_df) + 30 - 1) // 30)
-
-    def set_bank_page(p):
-        st.session_state.bank_page = p
-    
-    if st.session_state.scroll_to_here:
-        scroll_to_here(0,key='here')  # Scroll to the top of the page
-        st.session_state.scroll_to_here = False
-    st.markdown('---')
-
-    if not filtered_df.empty:
-        st.markdown(
-            f"<div style='text-align:center; font-weight:600;padding-bottom:15px'>Page {st.session_state.film_page}</div>",
-            unsafe_allow_html=True
-        )
-
-        if total_pages <= 6:
-            with st.container(key='page_button', horizontal=True, horizontal_alignment='center'):
-                for i in range(1, total_pages + 1):
-                    if st.button(
-                        str(i),
-                        key=f'page_top_{i}',
-                        disabled=(i == st.session_state.film_page),
-                        on_click=set_bank_page,
-                        args=(i,)
-                    ):
-                        st.session_state.scroll_to_here = True
-                        st.rerun()
-        else:
-            with st.container(key='page_button_top', horizontal=True, horizontal_alignment='center'):
-                if st.button('⬅️',key='previous_top', disabled=(st.session_state.film_page == 1), on_click=set_bank_page, args=(st.session_state.film_page-1,)):
-                    st.session_state.scroll_to_here = True
-                
-                start_page = max(1, st.session_state.bank_page - 1)  
-                end_page = min(total_pages, st.session_state.bank_page + 2)  
-                
-                pages_to_show = range(start_page, end_page + 1)
-                
-                if len(pages_to_show) < 4:
-                    if start_page == 1:
-                        pages_to_show = range(1, min(5, total_pages + 1))
-                    else:
-                        pages_to_show = range(max(1, total_pages - 3), total_pages + 1)
-                
-                for i in pages_to_show:
-                    if st.button(
-                        str(i),
-                        key=f'page_top_{i}',
-                        disabled=(i == st.session_state.bank_page),
-                        on_click=set_bank_page,
-                        args=(i,)
-                    ):
-                        st.session_state.scroll_to_here = True
-                        st.rerun()
-                
-                if st.button('➡️',key='next_top', disabled=(st.session_state.bank_page == total_pages), on_click=set_bank_page, args=(st.session_state.bank_page+1,)):
-                    st.session_state.scroll_to_here = True
-                    st.rerun()
-            with st.container(horizontal=True):
-                if st.button('⏮️ First Page', key='first_top', disabled=(st.session_state.bank_page == 1), on_click=set_bank_page, args=(1,), width='stretch'):
-                    st.session_state.scroll_to_here = True
-                    st.rerun()
-                if st.button('Last Page ⏭️', key='last_top', disabled=(st.session_state.bank_page == total_pages), on_click=set_bank_page, args=(total_pages,), width='stretch'):
-                    st.session_state.scroll_to_here = True
-                    st.rerun()
-
-        page = st.session_state.bank_page
-        
-        start_idx = (page - 1) * 30 
-        end_idx = min(start_idx + 30, len(filtered_df)) 
-        st.markdown("---")
-        st.caption(f"Showing {start_idx+1}-{end_idx} from {len(filtered_df)} films")
-        rows_to_display = filtered_df.iloc[start_idx:end_idx] 
-
-        st.markdown(
-            """
-            <style>
-            button[data-testid="stBaseButton-tertiary"] p {
-                font-size: 13px !important;
-            }
-            </style>
-            """,
-            unsafe_allow_html=True
-        )
-        with st.container(horizontal=True, horizontal_alignment='center'):
-            for i in range(0, len(rows_to_display)): # len = 8 // i = [0,8]
-                if i < len(rows_to_display):
-                    film = rows_to_display.iloc[i]
-                    real_index = rows_to_display.index[i]
-
-                    with st.container(width=device_width):
-                        # Tambahkan wrapper dengan fixed height
-                        st.markdown(f"""
-                            <div style="
-                                height: {device_height}px;  /* Atur tinggi tetap */
-                                width: 100%;
-                                overflow: hidden;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                                margin-bottom: 10px;
-                                border-radius: 5px;
-                                border: 1px solid #374151; 
-                            ">
-                                <img src="{film['Picture']}" 
-                                    style="
-                                        width: 100%;
-                                        height: 100%;
-                                        object-fit: cover;
-                                        object-position: center;
-                                    ">
-                            </div>
-                        """, unsafe_allow_html=True)
-
-                        title = film['Title']
-                        if len(title) > 30:
-                            title = title[:30] + "..."
-                        if film['Target Film'] != '--':
-                            if st.button(f':green-background[{title}]', key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
-                                st.session_state.viewing_bank_index.append([real_index, selected_part])
-                                st.rerun()
-                        else:
-                            if st.button(f':gray-background[{title}]', key=f'film_detail_btn_{real_index}', width='stretch', type='tertiary'):
-                                st.session_state.viewing_bank_index.append([real_index, selected_part])
-                                st.rerun()
-                            
-        st.markdown('---')
-        if total_pages <= 6:
-            with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
-                for i in range(1, total_pages + 1):
-                    if st.button(
-                        str(i),
-                        key=f'page_bottom_{i}',
-                        disabled=(i == st.session_state.bank_page),
-                        on_click=set_bank_page,
-                        args=(i,)
-                    ):
-                        st.session_state.scroll_to_here = True
-                        st.rerun()
-        else:
-            with st.container(key='page_button_bottom', horizontal=True, horizontal_alignment='center'):
-                if st.button('⬅️',key='previous_bottom', disabled=(st.session_state.bank_page == 1), on_click=set_bank_page, args=(st.session_state.bank_page-1,)):
-                    st.session_state.scroll_to_here = True
-                    st.rerun()
-
-                
-                start_page = max(1, st.session_state.bank_page - 1)  
-                end_page = min(total_pages, st.session_state.bank_page + 2)  
-                
-                pages_to_show = range(start_page, end_page + 1)
-                
-                if len(pages_to_show) < 4:
-                    if start_page == 1:
-                        pages_to_show = range(1, min(5, total_pages + 1))
-                    else:
-                        pages_to_show = range(max(1, total_pages - 3), total_pages + 1)
-                
-                for i in pages_to_show:
-                    if st.button(
-                        str(i),
-                        key=f'page_bottom_{i}',
-                        disabled=(i == st.session_state.bank_page),
-                        on_click=set_bank_page,
-                        args=(i,)
-                    ):
-                        st.session_state.scroll_to_here = True
-                        st.rerun()
-                
-                if st.button('➡️',key='next_bottom', disabled=(st.session_state.bank_page == total_pages), on_click=set_bank_page, args=(st.session_state.bank_page+1,)):
-                    st.session_state.scroll_to_here = True   
-                    st.rerun()
-            with st.container(horizontal=True):
-                if st.button('⏮️ First Page', key='first_bottom', disabled=(st.session_state.bank_page == 1), on_click=set_bank_page, args=(1,), width='stretch'):
-                    st.session_state.scroll_to_here = True
-                    st.rerun()
-                if st.button('Last Page ⏭️', key='last_bottom', disabled=(st.session_state.bank_page == total_pages), on_click=set_bank_page, args=(total_pages,), width='stretch'):
-                    st.session_state.scroll_to_here = True
-                    st.rerun()
-    else:
-        st.info('No film match the filter')
-
 def complex_home():
     if 'log_out_btn' not in st.session_state:
         st.session_state.log_out_btn = False
@@ -963,21 +653,6 @@ def complex_film(device):
 
     actress_df = st.session_state.actress_df
 
-    if 'drama_df' not in st.session_state:
-        st.session_state.drama_df = init_dataframe_drama()
-
-    drama_df = st.session_state.drama_df
-
-    if 'movie_df' not in st.session_state:
-        st.session_state.movie_df = init_dataframe_movie()
-
-    movie_df = st.session_state.movie_df
-
-    if 'tv_df' not in st.session_state:
-        st.session_state.tv_df = init_dataframe_tv()
-
-    tv_df = st.session_state.tv_df
-
     if 'cast_df' not in st.session_state:
         st.session_state.cast_df = init_dataframe_cast()
 
@@ -1008,435 +683,16 @@ def complex_film(device):
 
     @st.dialog("🎬 Film Details", width='small')
     def show_film_details():
-        if st.session_state.viewing_bank_index != []:
-            show_bank_film(st.session_state.viewing_bank_index)
+        index = st.session_state.viewing_film_index
+
+        if index is None or index >= len(df):
+            st.warning("No film selected")
+            st.stop()
+
+        if st.session_state.editing_film_index == index:
+            show_edit_film(index)
         else:
-            index = st.session_state.viewing_film_index
-
-            if index is None or index >= len(df):
-                st.warning("No film selected")
-                st.stop()
-            if st.session_state.editing_film_index == index:
-                show_edit_film(index)
-            else:
-                show_view_film(index)
-
-    def show_bank_film(view_bank):
-        index = view_bank[0][0]
-        type = view_bank[0][1]
-        if type == 'Drama':
-            film = st.session_state.drama_df.loc[index]
-        elif type == 'Movie':
-            film = st.session_state.movie_df.loc[index]
-        else:
-            film = st.session_state.tv_df.loc[index]
-
-        with st.container(key='poster_code', horizontal_alignment='center'):
-            st.markdown(f"<h2 style='text-align: center;'>{film['Title']}</h2>", unsafe_allow_html=True)
-            st.image(film['Picture'], width=200)
-        
-            st.link_button('Film Detail', film['Link'], type='primary', width=200)
-        filtered_actress_df = actress_df.copy()
-
-        actress_list = film['Actress'].split('_ ')
-        matching_actresses = filtered_actress_df[filtered_actress_df['Name (Stage)'].isin(actress_list)]
-        if len(matching_actresses)>2:
-            is_center = 'center'
-        else:
-            is_center = 'left'
-        st.markdown('---')
-        roles_is_empty = pd.isna(film['Role']) or film['Role'] == '--'
-        if not roles_is_empty:
-            actress_role_data = []
-            roles_data = film['Role']
-            roles_list = roles_data.split(' ## ')
-            for actress_data in roles_list:
-                actress_role = actress_data.split('_ ')
-                new_row = [
-                    actress_role[0],
-                    actress_role[1],
-                    actress_role[2]
-                ]
-                actress_role_data.append(new_row)
-            actress_role_df = pd.DataFrame(actress_role_data, columns=['Name', 'Role Name', 'Role Part'])
-        st.markdown("<h3 style='text-align: center; font-size:20px; padding-bottom:10px; margin-bottom:0px;'>Actress</h3>", unsafe_allow_html=True)
-        for idx in matching_actresses.index:
-            if type == 'Drama' or type == 'Movie':
-                actress_name = matching_actresses['Name (Stage)'][idx]
-                container_key = f"{actress_name}_{index+1}_photo"
-                if st.button(f':orange-background[**{actress_name}**]', width='content', type='tertiary', key=f"{actress_name}_{idx}", on_click=reset_page):
-                    st.session_state.viewing_film_index = None
-                    st.session_state.editing_film_index = None
-                    st.session_state.search_text = actress_name
-                    st.session_state.set_search = True
-                    st.session_state.scroll_to_top = True
-                    st.rerun()
-                with st.container(horizontal=True, horizontal_alignment=is_center):
-                    with st.container(width=80, key=container_key):
-                        # Display image as circle using HTML
-                        st.markdown(f"""
-                            <div style="
-                                width: 70px;
-                                height: 70px;
-                                border-radius: 50%;
-                                overflow: hidden;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
-                                margin: 0 auto 8px auto;
-                                background: white;
-                                border: 1px solid #374151;
-                            ">
-                                <img src="{matching_actresses['Picture'][idx]}" 
-                                    style="
-                                        width: 100%;
-                                        height: 100%;
-                                        object-fit: cover;
-                                    ">
-                            </div>
-                        """, unsafe_allow_html=True)
-                        
-                    
-                    with st.container():
-                        if not roles_is_empty:
-                            roles = actress_role_df[actress_role_df['Name'] == actress_name].iloc[0]
-                            if roles['Role Name'] != '--':
-                                st.write(f'**Role Name :** :gray-background[{roles["Role Name"]}]')
-                            else:
-                                st.write('**Role Name :** :yellow[(No Info)]')
-                            
-                            if roles['Role Part'] != '--':
-                                st.write(f'**Role Part :** :gray-background[{roles["Role Part"]}]')
-                            else:
-                                st.write('**Role Part :** :yellow[(No Info)]')
-                        else:
-                            st.write('**Role Name :** :yellow[(No Info)]')
-                            st.write('**Role Part :** :yellow[(No Info)]')
-            else:
-                with st.container(horizontal=True, horizontal_alignment=is_center):
-                    for idx in matching_actresses.index:
-                        actress_name = matching_actresses['Name (Given)'][idx]
-                        container_key = f"container_{actress_name}_{index}"
-                        with st.container(width=80, key=container_key):
-                            # Display image as circle using HTML
-                            st.markdown(f"""
-                                <div style="
-                                    width: 70px;
-                                    height: 70px;
-                                    border-radius: 50%;
-                                    overflow: hidden;
-                                    display: flex;
-                                    justify-content: center;
-                                    align-items: center;
-                                    margin: 0 auto 8px auto;
-                                    background: white;
-                                    border: 1px solid #374151;
-                                ">
-                                    <img src="{matching_actresses['Picture'][idx]}" 
-                                        style="
-                                            width: 100%;
-                                            height: 100%;
-                                            object-fit: cover;
-                                        ">
-                                </div>
-                            """, unsafe_allow_html=True)
-                            # Button
-                            if st.button(actress_name, width='stretch', type='tertiary', key=f"{actress_name}_{idx}", on_click=reset_page):
-                                st.session_state.viewing_film_index = None
-                                st.session_state.editing_film_index = None
-                                st.session_state.search_text = actress_name
-                                st.session_state.set_search = True
-                                st.session_state.scroll_to_top = True
-                                st.rerun()
-
-                        
-        if 'No One' in actress_list:
-            with st.container(width=80):
-                st.markdown(f"""
-                    <div style="
-                        width: 70px;
-                        height: 70px;
-                        border-radius: 50%;
-                        overflow: hidden;
-                        display: flex;
-                        justify-content: center;
-                        align-items: center;
-                        margin: 0 auto 8px auto;
-                        background: white;
-                        border: 1px solid #374151;
-                    ">
-                        <img src="{st.secrets.indicators.PLACEHOLDER_IMG}" 
-                            style="
-                                width: 100%;
-                                height: 100%;
-                                object-fit: cover;
-                            ">
-                    </div>
-                """, unsafe_allow_html=True)
-                
-                # Button
-                if st.button('No One', width='stretch', type='tertiary', 
-                            key=f"no_one", on_click=reset_page):
-                    st.session_state.viewing_film_index = None
-                    st.session_state.editing_film_index = None
-                    st.session_state.search_text = 'No One'
-                    st.session_state.set_search = True
-                    st.session_state.scroll_to_top = True
-                    st.rerun()
-
-        with st.expander('Other Cast', width='stretch'):
-            cast_role_data = []
-            main_role = []
-            support_role = []
-            guest_role = []
-            cameo_role = []
-            cast_list = film['Cast Name'].split(' ## ')
-            actress_list = film['Actress'].split('_ ')
-            for cast_data in cast_list:
-                cast_role = cast_data.split('_ ')
-                if cast_role[0] not in actress_list:
-                    if cast_role[2] == 'Main Role':
-                        main_role.append([
-                            cast_role[0],
-                            cast_role[1],
-                            cast_role[2]
-                        ])
-                    elif cast_role[2] == 'Support Role':
-                        support_role.append([
-                            cast_role[0],
-                            cast_role[1],
-                            cast_role[2]
-                        ])
-                    elif cast_role[2] == 'Guest Role':
-                        guest_role.append([
-                            cast_role[0],
-                            cast_role[1],
-                            cast_role[2]
-                        ])
-                    elif cast_role[2] == 'Cameo':
-                        cameo_role.append([
-                            cast_role[0],
-                            cast_role[1],
-                            cast_role[2]
-                        ])
-            
-            st.write('**Main Role**')
-            if main_role:
-                for main in main_role:
-                    with st.container(horizontal=True, horizontal_alignment='left'):
-                        st.write(f'- **:gray-background[{main[0]}]** : :yellow-background[{main[1]}] :orange-background[({main[2]})]')
-            else:
-                st.write('--')
-                
-
-            st.write('**Support Role**')
-            if support_role:
-                for support in support_role:
-                    st.write(f'- **:gray-background[{support[0]}]** : :yellow-background[{support[1]}] :orange-background[({support[2]})]')
-            else:
-                st.write('--')
-            
-            st.write('**Guest Role**')
-            if guest_role:
-                for guest in guest_role:
-                    st.write(f'- **:gray-background[{guest[0]}]** : :yellow-background[{guest[1]}] :orange-background[({guest[2]})]')
-            else:
-                st.write('--')
-                    
-            st.write('**Cameo**')
-            if cameo_role:
-                for cameo in cameo_role:
-                    st.write(f'- **:gray-background[{cameo[0]}]** : :yellow-background[{cameo[1]}] :orange-background[({cameo[2]})]')
-            else:
-                st.write('--')
-
-        st.markdown('---')
-        st.markdown("<h3 style='text-align: center; font-size:18px; padding-bottom:10px; margin-bottom:0px;'>Synopsis</h3>", unsafe_allow_html=True)
-        st.text(film['Synopsis'],text_alignment='justify')
-
-        st.markdown('---')
-        with st.container(horizontal=True, horizontal_alignment='center'):
-            if type != 'Movie':
-                eps = film['Episode']
-            else:
-                eps = 'Movie'
-            st.markdown(
-                f"""
-                <div style="
-                    border: 1px solid rgba(49, 51, 63, 0.2);
-                    border-radius: 10px;
-                    padding: 12px;
-                    text-align: center;
-                ">
-                    <div style="font-size: 14px; color: gray;">
-                        Year
-                    </div>
-                    <div style="font-size: 28px; font-weight: bold;">
-                        {film['Year']}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-            st.markdown(
-                f"""
-                <div style="
-                    border: 1px solid rgba(49, 51, 63, 0.2);
-                    border-radius: 10px;
-                    padding: 12px;
-                    text-align: center;
-                ">
-                    <div style="font-size: 14px; color: gray;">
-                        Episode
-                    </div>
-                    <div style="font-size: 28px; font-weight: bold;">
-                        {eps}
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        st.markdown(
-            f"""
-            <div style="
-                border: 1px solid rgba(49, 51, 63, 0.2);
-                border-radius: 10px;
-                padding: 12px;
-                text-align: center;
-            ">
-                <div style="font-size: 14px; color: gray;">
-                    Country
-                </div>
-                <div style="font-size: 28px; font-weight: bold;">
-                    {film['Country']}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        st.markdown(
-            f"""
-            <div style="
-                border: 1px solid rgba(49, 51, 63, 0.2);
-                border-radius: 10px;
-                padding: 12px;
-                text-align: center;
-            ">
-                <div style="font-size: 14px; color: gray;">
-                    Aired On
-                </div>
-                <div style="font-size: 28px; font-weight: bold;">
-                    {film['Aired']}
-                </div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        title_index = TITLE_OPTS.index(film['Target Film']) if film['Target Film'] in TITLE_OPTS else 0
-
-        target = st.selectbox('Film Target', options=TITLE_OPTS, width='stretch', index=title_index)    
-        st.markdown('---')
-        if st.button('➕ Add Film', width='stretch'):
-            if target != 'New':
-                target_data = df[df['Title'] == target].iloc[0]
-                target_index = df[df['Title'] == target].index[0]
-                if target_data['Type'] == 'Series' or target_data['Type'] == 'TV Show':
-                    film_curr_eps = target_data['Current Episode']
-                    film_eps = target_data['Episode']
-                else:
-                    film_curr_eps = '?'
-                    film_eps = '?'
-                
-                row = target_index+2
-                new_row = [
-                    target_data['Status'],
-                    target_data['Info'],
-                    target_data['Picture'],
-                    target_data['Title'],
-                    target_data['Type'],
-                    film_curr_eps,
-                    film_eps,
-                    target_data['Genre'],
-                    target_data['Rating'],
-                    target_data['Playlist'],
-                    target_data['Actress Name'],
-                    target_data['Note'],
-                    target_data['Upload Type'],
-                    film['Synopsis'],
-                    target_data['Roles'],
-                    film['Year'],
-                    film['Aired'],
-                    film['Cast'],
-                    film['Cast Name'],
-                    film['Link']
-                ]
-
-                if film_worksheet().update(f'A{row}:T{row}', [new_row]):
-                    st.session_state.film_df.loc[target_index] = new_row
-                    row = index + 2
-                    if type == 'Drama':
-                        drama_worksheet().update(f'M{row}', target)
-                        st.session_state.drama_df.at[index, 'Target Film'] = target
-                    elif type == 'Movie':
-                        movie_worksheet().update(f'M{row}', target)
-                        st.session_state.movie_df.at[index, 'Target Film'] = target
-                    elif type == 'TV Show':
-                        tv_worksheet().update(f'M{row}', target)
-                        st.session_state.tv_df.at[index, 'Target Film'] = target
-            else:
-                if type == 'Drama':
-                    episode = str(film['Episode'])
-                    playlist = film['Country'] + ' Series'
-                elif type == 'Movie':
-                    episode = '?'
-                    playlist = film['Country'] + ' Movies'
-                else:
-                    episode = str(film['Episode'])
-                    playlist = 'Variety Show'
-
-                new_row = [
-                    "Not Watched",
-                    "Want to watch",
-                    "https://res.cloudinary.com/devooeuej/image/upload/v1765969908/placeholder_poster.jpg",
-                    film['Title'],
-                    type,
-                    "?",
-                    episode,
-                    "--",
-                    "?",
-                    playlist,
-                    film['Actress'],
-                    '--',
-                    'Local',
-                    film['Synopsis'],
-                    film['Role'],
-                    str(film['Year']),
-                    film['Aired'],
-                    film['Cast'],
-                    film['Cast Name'],
-                    film['Link']
-                ]
-
-                if film_worksheet().append_row(new_row):
-                    st.session_state.film_df.loc[target_index] = new_row
-                    row = index + 2
-                    if type == 'Drama':
-                        drama_worksheet().update(f'M{row}', film['Title'])
-                        st.session_state.drama_df.at[index, 'Target Film'] = film['Title']
-                    elif type == 'Movie':
-                        movie_worksheet().update(f'L{row}', film['Title'])
-                        st.session_state.movie_df.at[index, 'Target Film'] = film['Title']
-                    elif type == 'TV Show':
-                        tv_worksheet().update(f'M{row}', film['Title'])
-                        st.session_state.tv_df.at[index, 'Target Film'] = film['Title']
-            st.toast('✅ Successfully added data to film!')
-            time.sleep(.5)  
-            st.session_state.viewing_bank_index = []
-            st.rerun()
-
-        if st.button('Close', width='stretch', type='primary'):
-            st.session_state.viewing_bank_index = []
-            st.rerun()
+            show_view_film(index)
 
     def show_view_film(index):
         try:
@@ -1928,6 +1184,7 @@ def complex_film(device):
                         other_cast_cameo = []
                         other_cast_regular_member = []
                         other_cast_main_host = []
+                        count = 0
                         for cast in other_casts:
                             cast_data = cast.split('_ ')
                             cast_link = cast_data[0]
@@ -1938,8 +1195,11 @@ def complex_film(device):
                             if cast_data['Target Name'].iloc[0] != '--':
                                 cast_target_name = cast_data['Target Name'].iloc[0]
                             else:
-                                cast_target_name = '--'
+                                cast_target_name = cast_data['Name'].iloc[0]
                             if cast_target_name not in actress_list:
+                                if cast_link in actress_df['MDL'].values:
+                                    count+=1
+                                
                                 cast_img = cast_df[cast_df['Link'] == cast_link]
                                 cast_pic = cast_img['Picture'].iloc[0]
                                 if cast_part.lower() == 'main role':
@@ -1998,7 +1258,9 @@ def complex_film(device):
                                         'Part' : cast_part,
                                         'Link' : cast_link
                                     })
-                                
+                        
+                        if count > 0:
+                            st.info(f'ℹ️ {count} Actress Found in database!')
                         if film['Type'] != 'TV Show':
                             st.markdown(f"<h2 style='text-align: center;'>Other Cast</h2>", unsafe_allow_html=True)
                             st.subheader(':orange-background[Main Role]')
@@ -2266,12 +1528,12 @@ def complex_film(device):
                         if st.button('Save Target Name', width='stretch'):
                             if target_name != 'No One':
                                 row = idx+2
-                                if cast_worksheet().update(f'C{row}', target_name):
-                                    cast_df.at[idx, 'Target Name'] = target_name
-                                    st.session_state.cast_df = cast_df
-                                    st.toast('✅ **:yellow[Target Name]** Added Successfully!')
-                                    time.sleep(.5)
-                                    st.rerun()
+                                cast_df.at[idx, 'Target Name'] = target_name
+                                st.session_state.cast_df = cast_df
+                                cast_worksheet().update(f'C{row}', target_name)
+                                st.toast('✅ **:yellow[Target Name]** Added Successfully!')
+                                time.sleep(.5)
+                                st.rerun()
                             else:
                                 save_error = '⚠️ Target Name Cannot be "No One"'
                         if st.button('Add Cast', width='stretch'):
@@ -3037,7 +2299,7 @@ def complex_film(device):
         st.markdown('---')
         show_recommend = st.toggle('Recommended', on_change=reset_page, key='show_recommend')
         st.markdown('---')
-        show_display_mode = st.radio('Page', options=['Home', 'Data Bank', 'Scrap'], horizontal=True, key='display_radio')
+        show_display_mode = st.radio('Page', options=['Home', 'Scrap'], horizontal=True, key='display_radio')
         st.markdown('---')
 
         if st.button('➕ Add New Film', width='stretch'):
@@ -3077,9 +2339,6 @@ def complex_film(device):
         filtered_df = filtered_df.sort_values(by='Title', ascending=True)
         
         display_film_grid(filtered_df, actress_df, device)
-    elif show_display_mode == 'Data Bank':
-        st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Film Bank</h1>", unsafe_allow_html=True)
-        display_film_bank(actress_df, drama_df, movie_df, tv_df, device)
     else:
         if st.session_state.get('html_reset', False):
             st.session_state.html_reset = False
