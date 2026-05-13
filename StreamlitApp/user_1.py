@@ -1934,11 +1934,12 @@ def complex_film(device):
                             cast_role = cast_data[1]
                             cast_part = cast_data[2]
                             cast_data = cast_df[cast_df['Link'] == cast_link]
+                            cast_name = cast_data['Name'].iloc[0]
                             if cast_data['Target Name'].iloc[0] != '--':
-                                cast_name = cast_data['Target Name'].iloc[0]
+                                cast_target_name = cast_data['Target Name'].iloc[0]
                             else:
-                                cast_name = cast_data['Name'].iloc[0]
-                            if cast_name not in actress_list:
+                                cast_target_name = '--'
+                            if cast_target_name not in actress_list:
                                 cast_img = cast_df[cast_df['Link'] == cast_link]
                                 cast_pic = cast_img['Picture'].iloc[0]
                                 if cast_part.lower() == 'main role':
