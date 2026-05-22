@@ -2351,8 +2351,6 @@ def complex_film(device):
     
         st.markdown("<h1 style='text-align: center; margin-bottom: 30px;'>Scrap</h1>", unsafe_allow_html=True)
 
-        section = st.radio('Section', options=['Film & Cast', 'Actress'], horizontal=True)
-            
         file = st.text_area("HTML TEXT", placeholder="Paste your html here...", key='html_bar')
         if st.button('Clear HTML', width='stretch', type='primary'):
             st.session_state.html_reset = True
@@ -2360,14 +2358,18 @@ def complex_film(device):
 
         if file:
             soup = BeautifulSoup(file, "html.parser")
-            if section == 'Film & Cast':
-                s_part = soup.title.text
-                if ' Cast ' in s_part:
-                    scrap_part = 'Cast'
-                else:
-                    scrap_part = 'Film'
-                
+            html_link = soup.find("link", rel="canonical")
+            s_part = html_link.get("href") if html_link else '--'
+            s_part = s_part.strip()
 
+            if '/cast' in s_part:
+                scrap_part = 'Cast'
+            elif '/people' in s_part:
+                scrap_part = 'Actress'
+            else:
+                scrap_part = 'Film'
+            
+            if scrap_part != 'Actress':
                 s_types = soup.select_one(".film-subtitle span").get_text(strip=True)
                 s_type = s_types.split(" ‧ ")
         
@@ -2379,29 +2381,27 @@ def complex_film(device):
                     scrap_type = 'TV Show'
                     
                 target = st.selectbox('Film Target', options=TITLE_OPTS, width='stretch')
-            else:
-                actress_link = soup.find("link", rel="canonical")
-                actress_ref = actress_link.get("href") if actress_link else '--'
-                target = st.selectbox('Actress Target', options=ACTRESS_OPTS, width='stretch')
 
-        
         if "cast_results" not in st.session_state:
             st.session_state.cast_results = []
         if "film_results" not in st.session_state:
             st.session_state.film_results = []
         if "new_actress_results" not in st.session_state:
             st.session_state.new_actress_results = []
-        if "actress_results" not in st.session_state:
-            st.session_state.actress_results = []
         if "drama_results" not in st.session_state:
             st.session_state.drama_results = []
         if "movie_results" not in st.session_state:
             st.session_state.movie_results = []
         if "tv_results" not in st.session_state:
             st.session_state.tv_results = []
+        if "drama_index" not in st.session_state:
+            st.session_state.drama_index = []
+        if "movie_index" not in st.session_state:
+            st.session_state.movie_index = []
+        if "tv_index" not in st.session_state:
+            st.session_state.tv_index = []
         if "scrap_exe" not in st.session_state:
             st.session_state.scrap_exe = False
-        
 
         cast_df = st.session_state.cast_df.copy()
         actress_df = st.session_state.actress_df.copy()
@@ -2425,10 +2425,21 @@ def complex_film(device):
                 if st.session_state.new_actress_results:
                     new_actress_df = pd.DataFrame(st.session_state.new_actress_results)
                     st.write(new_actress_df)
-            else:
+            elif scrap_part == 'Film':
                 if st.session_state.film_results:
                     film_scrap_df = pd.DataFrame(st.session_state.film_results)
                     st.write(film_scrap_df)
+            else:
+                if not st.session_state.job_error:
+                    for drama in st.session_state.drama_index:
+                        with st.container(horizontal=True):
+                            with st.container(horizontal_alignment='center', width='content'):
+                                st.image(drama['Picture'], width=110)
+                            with st.container():
+                                st.write(f'Title: {drama["Title"]}')
+                                st.write(f'Episode: {drama["Episode"]}')
+                else:
+                    st.warning('⚠️ Job Empty')
                 
         if save_scrap:
             st.session_state.scrap_exe = False
@@ -2559,14 +2570,16 @@ def complex_film(device):
                         st.warning('⚠️ Link is empty!')
 
         if file:
-            if st.session_state.scrap_exe and section == 'Film & Cast':
+            if st.session_state.scrap_exe and scrap_part != 'Actress':
                 cast_results = []
                 new_actress_results = []
                 film_results = []
 
                 title = soup.select_one("h1.film-title").get_text(strip=True)
 
+
                 st.subheader(title)
+                title = st.text_input('Title', width='stretch', value=title)
                 
                 headers = soup.find_all("h3")
                 if scrap_part == "Cast":
@@ -2676,36 +2689,15 @@ def complex_film(device):
                     })
 
                     st.session_state.film_results = film_results
-            elif st.session_state.scrap_exe and section == 'Actress':
+            elif st.session_state.scrap_exe and scrap_part == 'Actress':
                 drama_results = []
                 movie_results = []
                 tv_results = []
                 drama_index = []
                 movie_index = []
                 tv_index = []
-                headers = soup.find_all("h3")
-                biography_container = soup.find("div", class_="col-sm-8 col-lg-12 col-md-12").get_text(strip=True)
-                for h3 in headers:
-                    if h3.get_text(strip=True) == "Details":
-                        next_div = h3.find_parent("div").find_next_sibling("div")
-                        if next_div:
-                            li_items = next_div.find_all("li")
-                            for li in li_items:
-                                label = li.find("b")
-                                if label.get_text(strip=True) == 'First Name:':
-                                    first_name = label.next_sibling.strip()
 
-                                if label.get_text(strip=True) == 'Family Name:':
-                                    family_name = label.next_sibling.strip()
-                                
-                                if label.get_text(strip=True) == 'Native name:':
-                                    native_name = label.next_sibling.strip()
-                                if label.get_text(strip=True) == 'Nationality:':
-                                    nationality = label.next_sibling.strip()
-                                if label.get_text(strip=True) == 'Born:':
-                                    born = label.next_sibling.strip()
-                                    birthdate = datetime.strptime(born, "%B %d, %Y").strftime('%d/%m/%Y')
-                
+                actress_name = soup.find("h1", class_='film-title').get_text(strip=True)
                 filmography_section = soup.find_all("h5")
                 for h5 in filmography_section:
                     if h5.get_text(strip=True) == "Drama":
@@ -2723,12 +2715,18 @@ def complex_film(device):
                                 film_ref = '--'
 
                             episode = tr.find("td", class_="episodes").get_text(strip=True)
+                            
+                            roles = tr.find("td", class_="role")
+                            role = roles.find("div", class_="name").get_text(strip=True)
+                            part = roles.find("div", class_="roleid").get_text(strip=True)
 
                             drama_results.append({
                                 "Title": film_title,
                                 "Episode": episode,
                                 "Picture": img,
-                                "Link": film_ref
+                                "Link": film_ref,
+                                "Role Name": role,
+                                "Role Part": part
                             })
                     if h5.get_text(strip=True) == "Movie":
                         table = h5.find_next("table")
@@ -2738,11 +2736,22 @@ def complex_film(device):
                             td = tr.find("td", class_="title")
                             img = td.find("img")["src"]
                             film_title = td.find("b").get_text(strip=True)
+                            try:
+                                film_link = td.find("a")["href"]
+                                film_ref = "https://mydramalist.com" + film_link
+                            except Exception as e:
+                                film_ref = '--'
 
+                            roles = tr.find("td", class_="role")
+                            role = roles.find("div", class_="name").get_text(strip=True)
+                            part = roles.find("div", class_="roleid").get_text(strip=True)
 
                             movie_results.append({
                                 "Title": film_title,
-                                "Picture": img
+                                "Picture": img,
+                                "Link": film_ref,
+                                "Role Name": role,
+                                "Role Part": part
                             })
 
                     if h5.get_text(strip=True) == "TV Show":
@@ -2753,209 +2762,173 @@ def complex_film(device):
                             td = tr.find("td", class_="title")
                             img = td.find("img")["src"]
                             film_title = td.find("b").get_text(strip=True)
+                            try:
+                                film_link = td.find("a")["href"]
+                                film_ref = "https://mydramalist.com" + film_link
+                            except Exception as e:
+                                film_ref = '--'
 
                             episode = tr.find("td", class_="episodes").get_text(strip=True)
+
+                            roles = tr.find("td", class_="role")
+                            role = roles.find("div", class_="name").get_text(strip=True)
+                            part = roles.find("div", class_="roleid").get_text(strip=True)
 
                             tv_results.append({
                                 "Title": film_title,
                                 "Episode": episode,
-                                "Picture": img
+                                "Picture": img,
+                                "Link": film_ref,
+                                "Role Name": role,
+                                "Role Part": part
                             })
                 
-                actress_name = family_name + ' ' + first_name
-                if native_name in actress_df['Name (Native)'].values:
+                if s_part in actress_df['MDL'].values:
                     st.success(f'✅ {actress_name} was found in database!')
-                    match_actress = actress_df[actress_df['Name (Native)'] == native_name]
-                    height = match_actress['Height (cm)'].iloc[0].replace(' cm', '')
+                    match_actress = actress_df[actress_df['MDL'] == s_part]
+                    match_film = df[df['Actress Name'].str.contains(match_actress['Name (Stage)'].iloc[0], na=False)]
+                    match_cast = cast_df[cast_df['Link'] == s_part]
+
+                    st.write(match_actress) 
+                    st.write(match_film) 
+                    st.write(match_cast) 
                 else:
                     st.info(f'ℹ️ New Actress Detected')
-                    height = 0
-
-                st.info(biography_container)
-                input_job = st.multiselect(
-                    "Job:red[*]", 
-                    options=JOB_OPTS,
-                    key=f"input_job"
-                )
-                group_inputs = {}
-                job_error = False
-                idol_error = False
-                group_error = False
-
-                if "Idol" in input_job:
-                    group_inputs["Idol"] = st.text_input(
-                        "Idol Group"
-                    )
-                    if st.checkbox('No Info', key='check_idol_group'):
-                        idol_error = False
-                        group_inputs['Idol'] = '?'
-                    elif group_inputs['Idol'] == '':
-                        idol_error = True
-                    else:
-                        idol_error = False
-
-                if "Ex-Member" in input_job:
-                    group_inputs["Ex-Member"] = st.text_input(
-                        "Former Group"
-                    )
-                    if st.checkbox('No Info', key='check_ex_member_group'):
-                        group_error = False
-                        group_inputs['Ex-Member'] = '?'
-                    if group_inputs['Ex-Member'] == '':
-                        group_error = True
-                    else:
-                        group_error = False 
-
-                if idol_error or group_error:
-                    job_error = True
-                else:
-                    input_jobs = format_job_with_groups(input_job, group_inputs)
-                    job_error = False
-                
-                input_height = st.number_input(
-                    "Height (cm)",
-                    value=int(height),
-                    min_value=130
-                )
-
-                if st.checkbox('No Info', value=(height == '?'), key='Height Check'):
-                    input_height = '?'
-                else:
-                    input_height = str(input_height) + ' cm'
-                st.markdown('---')
-                st.write(f'Latin : {actress_name}')
-                st.write(f'Native : {native_name}')
-                st.write(f'Nationality : {nationality}')
-                st.write(f'Birthdate: {born} --> {birthdate}')
 
                 st.markdown('---')
                 st.subheader('Film List')
                 st.markdown('### Drama')
                 for drama in drama_results:
                     with st.container(horizontal=True):
-                        with st.container(width='content', vertical_alignment='center'):
-                            if st.checkbox('', key=f'drama_{drama["Title"]}'):
-                                check = True
-                            else:
-                                check = False
+                        if drama['Title'].lower() not in df['Title'].str.lower().values:
+                            with st.container(width='content', vertical_alignment='center'):
+                                if st.checkbox('', key=f'drama_{drama["Title"]}'):
+                                    check = True
+                                else:
+                                    check = False
 
-                        with st.container(horizontal_alignment='center', width='content'):
-                            st.image(drama['Picture'], width=110)
-                        with st.container():
-                            st.write(f'Title: {drama["Title"]}')
-                            st.write(f'Episode: {drama["Episode"]}')
-                            if check:
-                                playlist = st.selectbox('Playlist', key=f'new_playlist_{drama["Title"]}', options=PLAYLIST_OPTS)
-                                if playlist != 'All':
-                                    drama_index.append({
-                                        'Status': 'Not Watched',
-                                        'Info': 'Want to Watch',
-                                        'Picture': 'https://res.cloudinary.com/devooeuej/image/upload/v1765969908/placeholder_poster.jpg',
-                                        'Title': drama['Title'],
-                                        'Type': 'Series',
-                                        'Current Episode': '?',
-                                        'Episode': drama['Episode'],
-                                        'Genre': '--',
-                                        'Rating': '?',
-                                        'Playlist': playlist,
-                                        'Actress Name': actress_name,
-                                        'Note': '--',
-                                        'Upload Type': 'Local',
-                                        'Synopsis': '--',
-                                        'Roles': f'{actress_name}_ --_ --',
-                                        'Year': '--',
-                                        'Aired': '--',
-                                        'Cast': '--',
-                                        'Cast Name': '--',
-                                        'Link': drama['Link'],
-                                    })
+                            with st.container(horizontal_alignment='center', width='content'):
+                                st.image(drama['Picture'], width=110)
+                            with st.container():
+                                st.write(f'Title: {drama["Title"]}')
+                                st.write(f'Episode: {drama["Episode"]}')
+                                if check:
+                                    playlist = st.selectbox('Playlist', key=f'new_playlist_{drama["Title"]}', options=PLAYLIST_OPTS)
+                                    if playlist != 'All':
+                                        drama_index.append({
+                                            'Status': 'Not Watched',
+                                            'Info': 'Want to Watch',
+                                            'Picture': 'https://res.cloudinary.com/devooeuej/image/upload/v1765969908/placeholder_poster.jpg',
+                                            'Title': drama['Title'],
+                                            'Type': 'Series',
+                                            'Current Episode': '?',
+                                            'Episode': drama['Episode'],
+                                            'Genre': '--',
+                                            'Rating': '?',
+                                            'Playlist': playlist,
+                                            'Actress Name': actress_name,
+                                            'Note': '--',
+                                            'Upload Type': 'Local',
+                                            'Synopsis': '--',
+                                            'Roles': f'{actress_name}_ --_ --',
+                                            'Year': '--',
+                                            'Aired': '--',
+                                            'Cast': '--',
+                                            'Cast Name': '--',
+                                            'Link': drama['Link'],
+                                        })
                         
                 st.markdown('### Movie')
                 for movie in movie_results:
                     with st.container(horizontal=True):
-                        with st.container(width='content', vertical_alignment='center'):
-                            if st.checkbox('', key=f'movie_{movie["Title"]}'):
-                                check = True
-                            else:
-                                check = False
+                        if movie['Title'] not in df['Title'].values:
+                            with st.container(width='content', vertical_alignment='center'):
+                                if st.checkbox('', key=f'movie_{movie["Title"]}'):
+                                    check = True
+                                else:
+                                    check = False
 
-                        with st.container(horizontal_alignment='center', width='content'):
-                            st.image(movie['Picture'], width=110)
-                        with st.container():
-                            st.write(f'Title: {movie["Title"]}')
-                            if check:
-                                playlist = st.selectbox('Playlist', key=f'new_playlist_{movie["Title"]}', options=PLAYLIST_OPTS)
-                                if playlist != 'All':
-                                    movie_index.append({
-                                        'Status': 'Not Watched',
-                                        'Info': 'Want to Watch',
-                                        'Picture': 'https://res.cloudinary.com/devooeuej/image/upload/v1765969908/placeholder_poster.jpg',
-                                        'Title': movie['Title'],
-                                        'Type': 'Movie',
-                                        'Current Episode': '?',
-                                        'Episode': '?',
-                                        'Genre': '--',
-                                        'Rating': '?',
-                                        'Playlist': playlist,
-                                        'Actress Name': actress_name,
-                                        'Note': '--',
-                                        'Upload Type': 'Local',
-                                        'Synopsis': '--',
-                                        'Roles': f'{actress_name}_ --_ --',
-                                        'Year': '--',
-                                        'Aired': '--',
-                                        'Cast': '--',
-                                        'Cast Name': '--',
-                                        'Link': movie['Link'],
-                                    })
+                            with st.container(horizontal_alignment='center', width='content'):
+                                st.image(movie['Picture'], width=110)
+                            with st.container():
+                                st.write(f'Title: {movie["Title"]}')
+                                if check:
+                                    playlist = st.selectbox('Playlist', key=f'new_playlist_{movie["Title"]}', options=PLAYLIST_OPTS)
+                                    if playlist != 'All':
+                                        movie_index.append({
+                                            'Status': 'Not Watched',
+                                            'Info': 'Want to Watch',
+                                            'Picture': 'https://res.cloudinary.com/devooeuej/image/upload/v1765969908/placeholder_poster.jpg',
+                                            'Title': movie['Title'],
+                                            'Type': 'Movie',
+                                            'Current Episode': '?',
+                                            'Episode': '?',
+                                            'Genre': '--',
+                                            'Rating': '?',
+                                            'Playlist': playlist,
+                                            'Actress Name': actress_name,
+                                            'Note': '--',
+                                            'Upload Type': 'Local',
+                                            'Synopsis': '--',
+                                            'Roles': f'{actress_name}_ --_ --',
+                                            'Year': '--',
+                                            'Aired': '--',
+                                            'Cast': '--',
+                                            'Cast Name': '--',
+                                            'Link': movie['Link'],
+                                        })
 
                 st.markdown('### TV Show')
                 for tv in tv_results:
                     with st.container(horizontal=True):
-                        with st.container(width='content', vertical_alignment='center'):
-                            if st.checkbox('', key=f'tv_{tv["Title"]}'):
-                                check = True
-                            else:
-                                check = False
+                        if tv['Title'] not in df['Title'].values:
+                            with st.container(width='content', vertical_alignment='center'):
+                                if st.checkbox('', key=f'tv_{tv["Title"]}'):
+                                    check = True
+                                else:
+                                    check = False
 
-                        with st.container(horizontal_alignment='center', width='content'):
-                            st.image(tv['Picture'], width=110)
-                        with st.container():
-                            st.write(f'Title: {tv["Title"]}')
-                            st.write(f'Episode: {tv["Episode"]}')
-                            if check:
-                                playlist = st.selectbox('Playlist', key=f'new_playlist_{tv["Title"]}', options=PLAYLIST_OPTS)
-                                if playlist != 'All':
-                                    tv_index.append({
-                                        'Status': 'Not Watched',
-                                        'Info': 'Want to Watch',
-                                        'Picture': 'https://res.cloudinary.com/devooeuej/image/upload/v1765969908/placeholder_poster.jpg',
-                                        'Title': tv['Title'],
-                                        'Type': 'Movie',
-                                        'Current Episode': '?',
-                                        'Episode': tv['Episode'],
-                                        'Genre': '--',
-                                        'Rating': '?',
-                                        'Playlist': playlist,
-                                        'Actress Name': actress_name,
-                                        'Note': '--',
-                                        'Upload Type': 'Local',
-                                        'Synopsis': '--',
-                                        'Roles': f'{actress_name}_ --_ --',
-                                        'Year': '--',
-                                        'Aired': '--',
-                                        'Cast': '--',
-                                        'Cast Name': '--',
-                                        'Link': tv['Link'],
-                                    })
+                            with st.container(horizontal_alignment='center', width='content'):
+                                st.image(tv['Picture'], width=110)
+                            with st.container():
+                                st.write(f'Title: {tv["Title"]}')
+                                st.write(f'Episode: {tv["Episode"]}')
+                                if check:
+                                    playlist = st.selectbox('Playlist', key=f'new_playlist_{tv["Title"]}', options=PLAYLIST_OPTS)
+                                    if playlist != 'All':
+                                        tv_index.append({
+                                            'Status': 'Not Watched',
+                                            'Info': 'Want to Watch',
+                                            'Picture': 'https://res.cloudinary.com/devooeuej/image/upload/v1765969908/placeholder_poster.jpg',
+                                            'Title': tv['Title'],
+                                            'Type': 'Movie',
+                                            'Current Episode': '?',
+                                            'Episode': tv['Episode'],
+                                            'Genre': '--',
+                                            'Rating': '?',
+                                            'Playlist': playlist,
+                                            'Actress Name': actress_name,
+                                            'Note': '--',
+                                            'Upload Type': 'Local',
+                                            'Synopsis': '--',
+                                            'Roles': f'{actress_name}_ --_ --',
+                                            'Year': '--',
+                                            'Aired': '--',
+                                            'Cast': '--',
+                                            'Cast Name': '--',
+                                            'Link': tv['Link'],
+                                        })
+
+                st.session_state.drama_index = drama_index
+                st.session_state.movie_index = movie_index
+                st.session_state.tv_index = tv_index
             else:
-                if 'people' in actress_ref:
+                if scrap_part != 'Actress':
                     st.success('✅ HTML Detected! Ready to scrap!')
-                    if section == 'Film & Cast':
-                        st.info(f'ℹ️ Scrap Part Detected : {scrap_part}')
-                        st.info(f'ℹ️ Scrap Type Detected : {scrap_type}')
-                    else:
-                        st.info(f'ℹ️ Scrap Type Detected : Actress')
+                    st.info(f'ℹ️ Scrap Part Detected : {scrap_part}')
+                    st.info(f'ℹ️ Scrap Type Detected : {scrap_type}')
+                elif scrap_part == 'Actress':
+                    st.info(f'ℹ️ Scrap Type Detected : Actress')
                 else:
                     st.error('❌ No Valid HTML Detected!')
         else:
