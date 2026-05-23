@@ -32,7 +32,7 @@ COUNTRY_OPTS = [
     "Japanese",
     "Chinese",
     "Taiwanese",
-    "Hong Kong"
+    "Hong Kong",
     "Thai",
     "Western"
 ]
