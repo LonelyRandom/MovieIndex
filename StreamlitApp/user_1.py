@@ -27,13 +27,13 @@ JOB_OPTS = [
 ]
 
 COUNTRY_OPTS = [
-    "Indonesia",
-    "South Korea",
-    "Japan",
-    "China",
-    "Taiwan",
-    "Hong Kong"
-    "Thailand",
+    "Indonesian",
+    "South Korean",
+    "Japanese",
+    "Chinese",
+    "Taiwanese",
+    "Hong Kong",
+    "Thai",
     "Western"
 ]
 
@@ -746,7 +746,6 @@ def complex_film(device):
                     st.markdown("<h3 style='text-align: center; font-size:20px; padding-bottom:0px; margin-bottom:0px;'>Actress</h3>", unsafe_allow_html=True)
                     roles_is_empty = pd.isna(film['Roles']) or film['Roles'] == '--'
                     if not roles_is_empty:
-                        st.write(film['Roles'])
                         actress_role_data = []
                         cast_role_data = []
                         roles_data = film['Roles']
@@ -1551,6 +1550,9 @@ def complex_film(device):
                                 else:
                                     df.at[index, 'Actress Name'] += f'_ {target_name}'
                                     df.at[index, 'Roles'] += f' ## {target_name}_ {act_info["Role"]}_ {act_info["Part"]}'
+                                
+                                if df['Type'].iloc[index] == 'TV Show':
+                                    df.at[index, 'Roles'] = 'Unqualified'
 
                                 new_data = df.iloc[index].values.tolist()
                                 st.session_state.film_df = df
