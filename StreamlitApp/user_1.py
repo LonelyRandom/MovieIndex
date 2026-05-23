@@ -746,6 +746,7 @@ def complex_film(device):
                     st.markdown("<h3 style='text-align: center; font-size:20px; padding-bottom:0px; margin-bottom:0px;'>Actress</h3>", unsafe_allow_html=True)
                     roles_is_empty = pd.isna(film['Roles']) or film['Roles'] == '--'
                     if not roles_is_empty:
+                        st.write(film['Roles'])
                         actress_role_data = []
                         cast_role_data = []
                         roles_data = film['Roles']
@@ -1802,17 +1803,21 @@ def complex_film(device):
 
                         else:
                             actress_role_df = pd.DataFrame(columns=['Name', 'Role Name', 'Role Part'])
+                    else:
+                        actress_role_df = pd.DataFrame(columns=['Name', 'Role Name', 'Role Part'])
 
                     for idx in selected_actress_data.index:
                         data = selected_actress_data.loc[idx]
 
-                        if data['Name (Stage)'] in actress_role_df['Name'].to_list():
-                            role_data = actress_role_df[actress_role_df['Name'] == data['Name (Stage)']].iloc[0]
-                            if role_data['Role Name'] == '--':
-                                role_data['Role Name'] = ''
-                            
-                            if role_data['Role Part'] == '--':
-                                role_data['Role Part'] = 'Select Role Part'
+                        if not actress_role_df.empty:
+                            if data['Name (Stage)'] in actress_role_df['Name'].to_list():
+                                role_data = actress_role_df[actress_role_df['Name'] == data['Name (Stage)']].iloc[0]
+                                if role_data['Role Name'] == '--':
+                                    role_data['Role Name'] = ''
+                                
+                                if role_data['Role Part'] == '--':
+                                    role_data['Role Part'] = 'Select Role Part'
+                                
 
                         with st.container(horizontal=True, width='stretch'):
                             with st.container(width=110):
