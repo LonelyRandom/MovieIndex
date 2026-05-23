@@ -27,13 +27,13 @@ JOB_OPTS = [
 ]
 
 COUNTRY_OPTS = [
-    "Indonesia",
-    "South Korea",
-    "Japan",
-    "China",
-    "Taiwan",
+    "Indonesian",
+    "South Korean",
+    "Japanese",
+    "Chinese",
+    "Taiwanese",
     "Hong Kong"
-    "Thailand",
+    "Thai",
     "Western"
 ]
 
