@@ -2460,21 +2460,20 @@ def complex_film(device):
                 selected_actress_roles = []
                 for i in range(len(cast_results)):
                     cast_text.append(cast_results[i]["Name"])
-                    if cast_results[i]["Name"] in cast_df["Name"].values:
-                        selected_cast_df = cast_df[cast_df["Name"] == cast_results[i]["Name"]]
+                    if cast_results[i]["Link"] in cast_df["Link"].values:
+                        selected_cast_df = cast_df[cast_df["Link"] == cast_results[i]["Link"]]
                         if selected_cast_df["Link"].iloc[0] in st.session_state.actress_df['MDL'].values:
                             if selected_cast_df["Target Name"].iloc[0] != '--':
                                 selected_actress.append(selected_cast_df["Target Name"].iloc[0])
-                                selected_actress_roles.append(f'{selected_cast_df["Target Name"].iloc[0]}_ --_ --')
+                                selected_actress_roles.append(f'{selected_cast_df["Target Name"].iloc[0]}_ {cast_results[i]["Role"]}_ {cast_results[i]["Part"]}')
                             else:
                                 selected_actress.append(cast_results[i]["Name"])
-                                selected_actress_roles.append(f'{cast_results[i]["Name"]}_ --_ --')
+                                selected_actress_roles.append(f'{cast_results[i]["Name"]}_ {cast_results[i]["Role"]}_ {cast_results[i]["Part"]}')
 
                     cast_name_text.append(f"{cast_results[i]['Link']}_ {cast_results[i]['Role']}_ {cast_results[i]['Part']}")
 
                 if selected_actress and selected_actress_roles:
-                    actress_name_df = actress_df[actress_df["Name (Stage)"].isin(selected_actress)]
-                    actress_name_text = '_ '.join(actress_name_df["Name (Stage)"].values.tolist())
+                    actress_name_text = '_ '.join(selected_actress)
                     actress_name_role_text = ' ## '.join(selected_actress_roles)
                 else:
                     actress_name_text = 'No One'
