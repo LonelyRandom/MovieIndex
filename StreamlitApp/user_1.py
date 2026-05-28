@@ -1724,7 +1724,12 @@ def complex_film(device):
                         st.write('🌕' * int(edited_rating) + '🌗' + '🌑' * (5-(int(edited_rating)+1)))
                 edited_status = 'Watched'
             elif edited_info == 'Drop':
-                edited_current_eps = '?'
+                if film['Current Episode'] == '?':
+                    current_eps = 1
+                else:
+                    current_eps = int(film['Current Episode'])
+
+                edited_current_eps = st.number_input('Current Episode', min_value=1, max_value=int(film['Episode']), value=current_eps)
                 edited_rating = 0
                 edited_status = 'Dissapointing'
             else:
