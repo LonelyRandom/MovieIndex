@@ -946,9 +946,6 @@ def complex_film(device):
                 elif info_text == 'Drop':
                     info_icon = '🔴'
                     info_color = 'red'
-                elif info_text == 'Dissapointing':
-                    info_icon = '🟣'
-                    info_color = 'violet'
                 else:
                     info_icon = '⚪'
                     info_color = 'grey'
@@ -960,6 +957,9 @@ def complex_film(device):
                     status_icon = '🟢'
                     status_color = 'green'
                 elif status_text == 'Recommended':
+                    status_icon = '🟡'
+                    status_color = 'yellow'
+                elif status_text == 'Dissapointing':
                     status_icon = '🟣'
                     status_color = 'violet'
                 else:
