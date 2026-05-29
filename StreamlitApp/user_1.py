@@ -585,8 +585,6 @@ def display_scrap_manual(): #scrapping
         st.session_state.tv_index = []
     if "scrap_exe" not in st.session_state:
         st.session_state.scrap_exe = False
-    if "scrap_type" not in st.session_state:
-        st.session_state.scrap_type = None
 
     cast_df = st.session_state.cast_df.copy()
     actress_df = st.session_state.actress_df.copy()
@@ -656,7 +654,7 @@ def display_scrap_manual(): #scrapping
 
             if selected_actress and selected_actress_roles:
                 actress_name_text = '_ '.join(selected_actress)
-                if st.session_state.scrap_part == 'TV Show':
+                if scrap_type == 'TV Show':
                     actress_name_role_text = 'Unqualified'
                 else:
                     actress_name_role_text = ' ## '.join(selected_actress_roles)
@@ -799,8 +797,6 @@ def display_scrap_manual(): #scrapping
                     section_list = ["Main Host", "Regular Member", "Guest"]
                 else:
                     section_list = ["Guest Role", "Support Role", "Main Role", "Cameo"]
-                
-                st.session_state.scrap_type = scrap_type
                 
                 with st.container(horizontal=True):
                     for h3 in headers:
