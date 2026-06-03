@@ -41,7 +41,6 @@ COUNTRY_OPTS = [
 # MOVIE OPTS
 INFO_OPTS_S = [
     "Want to Watch",
-    "TBA",
     "On Going",
     "Drop",
     "Complete"
@@ -49,13 +48,13 @@ INFO_OPTS_S = [
 
 INFO_OPTS_M = [
     "Want to Watch",
-    "TBA",
     "Dissapointing",
     "Drop",
     "Complete"
 ]
 
 GENRE_OPTS = [
+    "[PLACEHOLDER]",
     "Action",
     "Comedy",
     "Drama",
@@ -269,7 +268,7 @@ def display_film_grid(df, actress_df, device):
         .tolist()
     )
 
-    INFO_OPTS_MIX = ['All','TBA'] + sorted(
+    INFO_OPTS_MIX = ['All'] + sorted(
         df.loc[df['Info'] != 'All', 'Info']
         .dropna()
         .unique()
@@ -2266,7 +2265,7 @@ def complex_film(device):
             
             st.subheader("Basic Information")
 
-            edited_title = st.text_area('Title', placeholder='Enter film title...', value=film['Title'], key=f'film_title_{index}')
+            edited_title = st.text_area('Title:red[*]', placeholder='Enter film title...', value=film['Title'], key=f'film_title_{index}')
 
             if pd.notna(film['Synopsis']) and film['Synopsis'] != '⚠️ Synopsis not found!':
                 text_synopsis = film['Synopsis']
@@ -2304,7 +2303,7 @@ def complex_film(device):
                 ]
 
             selected_actress = st.multiselect(
-                'Actress', 
+                'Actress:red[*]', 
                 options = ACTRESS_OPTS, 
                 default = actress_list
             )
@@ -2312,7 +2311,7 @@ def complex_film(device):
             edited_actress = "_ ".join(selected_actress)
 
             selected_genre = st.multiselect(
-                'Genre', 
+                'Genre:red[*]', 
                 options = GENRE_OPTS, 
                 default = [
                     j.strip() for j in film['Genre'].split(',')
@@ -2698,7 +2697,7 @@ def complex_film(device):
 
             selected_genre = st.multiselect('Genre:red[*]', key='new_genre', options=GENRE_OPTS)
             new_genre = ", ".join(selected_genre)
-
+            
             new_type = st.selectbox('Type', key='new_type', options=TYPE_OPTS)
 
             if new_type == 'Movie':
@@ -2732,8 +2731,15 @@ def complex_film(device):
                 new_rating = '?'
                 new_status = 'Dissapointing'
 
-            if st.toggle('Recommended'):
-                new_status = 'Recommended'
+            with st.container(horizontal=True):
+                if st.toggle('Recommended'):
+                    new_status = 'Recommended'
+            
+                if st.toggle('TBA'):
+                    new_status = 'TBA'
+                    if not selected_genre:
+                        new_genre = '[PLACEHOLDER]'
+            
             new_playlist = st.selectbox('Playlist', key='new_playlist', options=PLAYLIST_OPTS)
 
             if st.checkbox('New Playlist', key='add_new_playlist'):
@@ -2996,7 +3002,7 @@ def complex_film(device):
     if show_recommend:
         filtered_df = filtered_df[filtered_df['Status'] == 'Recommended']
     if show_tba:
-        filtered_df = filtered_df[filtered_df['Info'] == 'TBA']
+        filtered_df = filtered_df[filtered_df['Status'] == 'TBA']
     if show_poster:
         filtered_df = filtered_df.loc[filtered_df['Picture'].str.contains('placeholder', na=False)]
     
