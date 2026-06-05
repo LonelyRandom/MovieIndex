@@ -1258,6 +1258,9 @@ def complex_film(device):
         st.session_state.info = None
     if 'rec' not in st.session_state:
         st.session_state.rec = False
+    if 'test' not in st.session_state:
+        st.session_state.test = '--'
+        
 
     if 'show_more_main' not in st.session_state:
         st.session_state.show_more_main = False
@@ -1416,7 +1419,7 @@ def complex_film(device):
                             button_label = actress_name + " / " + matching_actresses["Name (Given)"][idx]
 
                         with st.container(horizontal=True):
-                            if st.button(f':orange-background[**{button_label}**]', width='content', type='tertiary', key=f"{actress_name}_{idx}", on_click=reset_page):
+                            if st.button(f':orange-background[**{button_label}**]', width='content', type='tertiary', key=f"{actress_name}__{idx}", on_click=reset_page):
                                 st.session_state.viewing_film_index = None
                                 st.session_state.editing_film_index = None
                                 st.session_state.search_text = actress_name
@@ -1591,6 +1594,9 @@ def complex_film(device):
                 elif status_text == 'Dissapointing':
                     status_icon = '🟣'
                     status_color = 'violet'
+                elif status_text == 'TBA':
+                    status_icon = '🔵'
+                    status_color = 'blue'
                 else:
                     status_icon = '⚪'
                     status_color = 'grey'
@@ -2310,13 +2316,18 @@ def complex_film(device):
 
             edited_actress = "_ ".join(selected_actress)
 
-            selected_genre = st.multiselect(
-                'Genre:red[*]', 
-                options = GENRE_OPTS, 
-                default = [
+            if film['Genre'] == '[PLACEHOLDER]':
+                genre_text = []
+            else:
+                genre_text = [
                     j.strip() for j in film['Genre'].split(',')
                     if j.strip() in GENRE_OPTS
                 ]
+
+            selected_genre = st.multiselect(
+                'Genre:red[*]', 
+                options = GENRE_OPTS, 
+                default = genre_text
             )
 
             edited_genre = ", ".join(selected_genre)
@@ -2331,7 +2342,10 @@ def complex_film(device):
                     eps = 1
                 else:
                     eps = int(film['Episode'])
-                edited_eps = st.number_input('Episode',min_value=1, value=eps)
+                if st.session_state.status != 'TBA':
+                    edited_eps = st.number_input('Episode',min_value=1, value=eps)
+                else:
+                    edited_eps = '?'
                 edited_info = st.selectbox('Info', options=INFO_OPTS_S, index=info_s_index)
 
             if edited_info == 'On Going':
@@ -2379,13 +2393,21 @@ def complex_film(device):
                     edited_playlist = new_playlist
             
             if film['Status'] == 'Recommended':
-                status_toggle = True
+                status_index = 1
+            elif film['Status'] == 'TBA':
+                status_index = 2
             else:
-                status_toggle = False
-
-            if st.toggle('Recommended', value=status_toggle):
-                edited_status = 'Recommended'
+                status_index = 0
             
+            st.radio('Status', options=['--', 'Recommended', 'TBA'], index=status_index, horizontal=True, key='status')
+
+            if st.session_state.status == 'Recommended':
+                edited_status = 'Recommended'
+            elif st.session_state.status == 'TBA':
+                edited_status = 'TBA'
+                if not selected_genre:
+                    edited_genre = '[PLACEHOLDER]'
+                    
             st.markdown('---')
 
             if film['Note'] == '--':
