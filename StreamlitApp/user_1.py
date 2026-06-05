@@ -1258,9 +1258,6 @@ def complex_film(device):
         st.session_state.info = None
     if 'rec' not in st.session_state:
         st.session_state.rec = False
-    if 'test' not in st.session_state:
-        st.session_state.test = '--'
-        
 
     if 'show_more_main' not in st.session_state:
         st.session_state.show_more_main = False
@@ -2240,8 +2237,6 @@ def complex_film(device):
         info_m_index = INFO_OPTS_M.index(film['Info']) if film['Info'] in INFO_OPTS_M else 0
         type_index = TYPE_OPTS.index(film['Type']) if film['Type'] in TYPE_OPTS else 0
 
-        st.session_state.status = '--'
-
         tab_edit_film, tab_edit_actress_role, tab_action_btn = st.tabs(['Film Info', 'Actress Role', 'Action'])
         with tab_edit_film:
         
@@ -2344,10 +2339,7 @@ def complex_film(device):
                     eps = 1
                 else:
                     eps = int(film['Episode'])
-                if st.session_state.status != 'TBA':
-                    edited_eps = st.number_input('Episode',min_value=1, value=eps)
-                else:
-                    edited_eps = '?'
+                edited_eps = st.number_input('Episode',min_value=1, value=eps)
                 edited_info = st.selectbox('Info', options=INFO_OPTS_S, index=info_s_index)
 
             if edited_info == 'On Going':
@@ -2401,12 +2393,13 @@ def complex_film(device):
             else:
                 status_index = 0
             
-            st.radio('Status', options=['--', 'Recommended', 'TBA'], index=status_index, horizontal=True, key='status')
+            status = st.radio('Status', options=['--', 'Recommended', 'TBA'], index=status_index, horizontal=True)
 
-            if st.session_state.status == 'Recommended':
+            if status == 'Recommended':
                 edited_status = 'Recommended'
-            elif st.session_state.status == 'TBA':
+            elif status == 'TBA':
                 edited_status = 'TBA'
+                edited_eps = '?'
                 if not selected_genre:
                     edited_genre = '[PLACEHOLDER]'
                     
@@ -2629,6 +2622,8 @@ def complex_film(device):
 
                             st.session_state.editing_film_index = None
                             st.rerun()
+
+                        st.session_state.status = '--'
                 if st.session_state.delete_film == False:
                     if st.button("🗑️ Delete Film", width='stretch', type="secondary", key=f"delete_{index}"):
                         st.session_state.delete_film = True
@@ -2638,14 +2633,17 @@ def complex_film(device):
                     with st.container(horizontal=True):
                         if st.button('Yes', width='stretch'):
                             st.session_state.delete_film = False
+                            st.session_state.status = '--'
                             delete_film(index)
                         if st.button('No', width='stretch'):
                             st.session_state.delete_film = False
                             st.rerun()
+                
             else:
                 st.warning('⚠️ Fill Mandatory Fields First! (:red[*])')
         if st.button('❌ Cancel', width='stretch'):
             st.session_state.editing_film_index = None
+            st.session_state.status = '--'
             st.rerun()
 
                 
