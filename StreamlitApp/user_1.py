@@ -2240,7 +2240,7 @@ def complex_film(device):
         info_m_index = INFO_OPTS_M.index(film['Info']) if film['Info'] in INFO_OPTS_M else 0
         type_index = TYPE_OPTS.index(film['Type']) if film['Type'] in TYPE_OPTS else 0
 
-        st.session_state.status == '--'
+        st.session_state.status = '--'
 
         tab_edit_film, tab_edit_actress_role, tab_action_btn = st.tabs(['Film Info', 'Actress Role', 'Action'])
         with tab_edit_film:
