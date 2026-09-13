@@ -43,14 +43,14 @@ INFO_OPTS_S = [
     "Want to Watch",
     "On Going",
     "Drop",
-    "Complete"
+    "Completed"
 ]
 
 INFO_OPTS_M = [
     "Want to Watch",
     "Dissapointing",
     "Drop",
-    "Complete"
+    "Completed"
 ]
 
 GENRE_OPTS = [
@@ -438,25 +438,34 @@ def display_film_grid(df, actress_df, device):
                         # Tambahkan wrapper dengan fixed height
                         st.markdown(f"""
                             <div style="
-                                height: {device_height}px;  /* Atur tinggi tetap */
                                 width: 100%;
-                                overflow: hidden;
-                                display: flex;
-                                justify-content: center;
-                                align-items: center;
                                 margin-bottom: 10px;
                                 border-radius: 5px;
-                                border: 1px solid #{title_background_color}; 
+                                overflow: hidden;
+                                border: 1px solid #{title_background_color};
                             ">
                                 <img src="{film['Picture']}" 
                                     style="
+                                        display: block;
                                         width: 100%;
-                                        height: 100%;
+                                        height: {device_height}px;
                                         object-fit: cover;
                                         object-position: center;
-                                    ">
+                                    "
+                                >
+                            </div>
+                            <div style="
+                                color: #9B9EA8;
+                                text-align: center;
+                                font-size: 10px;
+                                line-height: 1;
+                                margin-bottom: 3px;
+                                margin-top: -5px;
+                            ">
+                                {film['Info']}
                             </div>
                         """, unsafe_allow_html=True)
+
 
                         title = film['Title']
                         if len(title) > 30:
@@ -1229,7 +1238,7 @@ def set_eps(p, max_p):
         st.session_state.eps = p
     
     if st.session_state.eps == max_p:
-        st.session_state.info = 'complete'
+        st.session_state.info = 'completed'
     else:
         st.session_state.info = 'on going'
 
@@ -1563,7 +1572,7 @@ def complex_film(device):
                 status_text = film['Status']
                 type_text = film['Type']
 
-                if info_text == 'Complete':
+                if info_text == 'Completed':
                     info_icon = '🔵'
                     info_color = 'blue'
                 elif info_text == 'Want to Watch':
@@ -1617,8 +1626,30 @@ def complex_film(device):
                         st.markdown('### Type')
                         st.badge(film['Type'], icon=type_icon, color='orange')
 
-                        st.markdown('### Genre')
-                        st.write(film['Genre'])
+                        if not st.session_state.edit_eps:
+                            st.markdown('### Genre')
+                            st.write(film['Genre'])
+                        else:
+                            if st.session_state.info == 'completed':
+                                if film['Genre'] == '[PLACEHOLDER]':
+                                    genre_text = []
+                                else:
+                                    genre_text = [
+                                        j.strip() for j in film['Genre'].split(',')
+                                        if j.strip() in GENRE_OPTS
+                                    ]
+                    
+                                selected_genre = st.multiselect(
+                                    'Genre:red[*]', 
+                                    options = GENRE_OPTS, 
+                                    default = genre_text
+                                )
+                    
+                                edit_genre = ", ".join(selected_genre)
+                            else:
+                                st.markdown('### Genre')
+                                st.write(film['Genre'])
+                                edit_genre = film['Genre']
                 
                     with st.container():
                         st.markdown('### Info')
@@ -1626,7 +1657,7 @@ def complex_film(device):
                             st.badge(film['Info'], icon=info_icon, color=info_color)
                         else:
                             if st.session_state.eps == int(film['Episode']):
-                                st.badge('Complete', icon='🔵', color='blue')
+                                st.badge('Completed', icon='🔵', color='blue')
                             else:
                                 st.badge('On Going', icon='🟡', color='yellow')
 
@@ -1651,7 +1682,7 @@ def complex_film(device):
                                             """,
                                             unsafe_allow_html=True
                                         )
-                                    if film['Info'] != 'Complete':
+                                    if film['Info'] != 'Completed':
                                         if st.button('✏️', key='edit-eps', type='tertiary'):
                                             if film['Current Episode'] == '?':
                                                 eps = 1
@@ -1682,7 +1713,7 @@ def complex_film(device):
                                 
                         st.markdown('### Playlist')
                         st.info(film['Playlist']) 
-                if st.session_state.edit_eps and st.session_state.info != 'complete':    
+                if st.session_state.edit_eps and st.session_state.info != 'completed':    
                     with st.container(horizontal=True):
                         save_edited = st.button('✅', width='stretch', key='save_edited_eps')
                                 
@@ -1697,13 +1728,15 @@ def complex_film(device):
                         cells = [
                             {"range": f"A{row}", "values": [["Watched"]]},
                             {"range": f"B{row}", "values": [["On Going"]]},
-                            {"range": f"F{row}", "values": [[st.session_state.eps]]}
+                            {"range": f"F{row}", "values": [[st.session_state.eps]]},
+                            {"range": f"H{row}", "values": [[edit_genre]]}
                         ]
 
                         if film_worksheet().batch_update(cells):
                             df.at[index, 'Status'] = 'Watched'
                             df.at[index, 'Info'] = 'On Going'
                             df.at[index, 'Current Episode'] = st.session_state.eps
+                            df.at[index, 'Genre'] = edit_genre
                             
                             st.session_state.film_df = values_handling(df,'film')  # Update session state
                             
@@ -1715,7 +1748,7 @@ def complex_film(device):
                             st.rerun()
 
 
-                    if st.session_state.info == 'complete':
+                    if st.session_state.info == 'completed':
                         if film['Status'] == 'Recommended':
                             rec_value = True
                         else:
@@ -1731,7 +1764,7 @@ def complex_film(device):
                 else:
                     rate = film['Rating']
                 st.markdown(f'## Ratings -- {rate}')
-                if st.session_state.info != 'complete':
+                if st.session_state.info != 'completed':
                     with st.container(key='star_rating'):
                         if film['Rating'] == '?':
                             st.write('🌑🌑🌑🌑🌑')
@@ -1750,7 +1783,7 @@ def complex_film(device):
                             
                 st.markdown('---')
                 st.markdown('## Notes')
-                if st.session_state.info != 'complete':
+                if st.session_state.info != 'completed':
                     st.warning(film['Note'])
                 else:
                     if film['Note'] == '--':
@@ -1762,8 +1795,8 @@ def complex_film(device):
                     if edited_note == '':
                         edited_note = '--'
                     
-                if st.session_state.edit_eps and st.session_state.info == 'complete':    
-                    if st.session_state.info == 'complete':
+                if st.session_state.edit_eps and st.session_state.info == 'completed':    
+                    if st.session_state.info == 'completed':
                         if film['Status'] == 'Recommended':
                             rec_value = True
                         else:
@@ -1788,7 +1821,7 @@ def complex_film(device):
                             row = index+2
                             cells = [
                                 {"range": f"A{row}", "values": [[edited_status]]},
-                                {"range": f"B{row}", "values": [["Complete"]]},
+                                {"range": f"B{row}", "values": [["Completed"]]},
                                 {"range": f"F{row}", "values": [[st.session_state.eps]]},
                                 {"range": f"I{row}", "values": [[edited_rating]]},
                                 {"range": f"L{row}", "values": [[edited_note]]}
@@ -1796,7 +1829,7 @@ def complex_film(device):
 
                             if film_worksheet().batch_update(cells):
                                 df.at[index, 'Status'] = edited_status
-                                df.at[index, 'Info'] = 'Complete'
+                                df.at[index, 'Info'] = 'Completed'
                                 df.at[index, 'Current Episode'] = st.session_state.eps
                                 df.at[index, 'Rating'] = edited_rating
                                 df.at[index, 'Note'] = edited_note
@@ -2283,7 +2316,11 @@ def complex_film(device):
             if film['Cast Name'] != '--':
                 if film['Actress Name'] != 'No One':
                     actress_list = []
-                    name_map = cast_df.set_index('Link')[['Name', 'Target Name']].to_dict('index')
+                    name_map = (
+                        cast_df.drop_duplicates(subset='Link', keep='first')
+                            .set_index('Link')[['Name', 'Target Name']]
+                            .to_dict('index')
+                    )
                     for i in film['Cast Name'].split(' ## '):
                         roles = i.strip()
                         role = roles.split('_ ')
@@ -2351,7 +2388,7 @@ def complex_film(device):
                 edited_current_eps = st.number_input('Current Episode', min_value=1, max_value=int(film['Episode']), value=current_eps)
                 edited_rating = '?'
                 edited_status = 'Watched'
-            elif edited_info == 'Complete':
+            elif edited_info == 'Completed':
                 edited_current_eps = edited_eps
                 if film['Rating'] == '?':
                     edited_rating = st.number_input('Rating', min_value=0.0, max_value=5.0, step=0.5, value=2.5)
@@ -2550,7 +2587,7 @@ def complex_film(device):
                             st.toast('ℹ️ Photo Changed')
 
                         # kalau ganti foto dan code
-                        elif (new_pic and new_pic != '') and (film['Title'] != edited_title):
+                        elif (new_pic and new_pic != film['Picture']) and (film['Title'] != edited_title):
                             if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
                                 try:
                                     if "cloudinary" in film['Picture']:
@@ -2568,7 +2605,7 @@ def complex_film(device):
                             st.toast('ℹ️ Photo and Title Changed')
                         
                         # kalau cuma ganti code
-                        elif not new_pic and (film['Title'] != edited_title):
+                        elif (new_pic == film['Picture']) and (film['Title'] != edited_title):
                             if pd.notna(film['Picture']) and film['Picture'] and "placeholder" not in str(film['Picture']).lower():
                                 try:
                                     if pic_up == 'Local' and "cloudinary" in film['Picture']:
@@ -2735,7 +2772,7 @@ def complex_film(device):
                 new_current_eps = st.number_input('Current Episode', min_value=1, max_value=new_episode)
                 new_rating = '?'
                 new_status = 'Watched'
-            elif new_info == 'Complete':
+            elif new_info == 'Completed':
                 new_current_eps = new_episode
                 new_rating = st.number_input('Rating', min_value = 0.0, max_value = 5.0, value=2.5, step=0.5, key='new_rating')
                 with st.container(key='star_rating'):
